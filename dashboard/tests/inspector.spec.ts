@@ -166,4 +166,83 @@ test.describe("Evidence Inspector E2E", () => {
       "NAV_AUTH_INSUFFICIENT_FOR_POSITIONING",
     );
   });
+
+  test("v0.5: renders 5-second executive hero, interactive Evidence Graph, Presentation/Technical modes, and live Decision-Time Audit", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Auto-assessed initial scenario populates Executive Hero, Graph, and Timeline immediately
+    await expect(page.getByTestId("executive-summary")).toBeVisible();
+    await expect(page.getByTestId("hero-status")).toHaveText("Potential conflict");
+    await expect(page.getByTestId("env-context-strip")).toContainText("69.37 mAOD");
+    await expect(page.getByTestId("env-context-strip")).toContainText("6.1 mm/day");
+
+    // Backend-driven Evidence Graph with clickable node inspector
+    await expect(page.getByTestId("evidence-graph")).toBeVisible();
+    const evNodes = page.getByTestId("graph-node-evidence");
+    await expect(evNodes).toHaveCount(3);
+    await evNodes.nth(1).click();
+    await expect(page.getByTestId("graph-node-inspector")).toContainText(
+      "GSI_11_Lough_Funshinagh",
+    );
+    await expect(page.getByTestId("graph-node-inspector")).toContainText("Unknown (null)");
+
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: "test-results/evidence-inspector-v05-env.png",
+      fullPage: true,
+    });
+
+    // Presentation vs Technical Inspection mode toggle
+    await expect(page.locator("#geometry-json")).toHaveCount(0);
+    await page.getByTestId("view-technical").click();
+    await expect(page.locator("#geometry-json")).toBeVisible();
+    await expect(page.getByTestId("technical-inspector")).toContainText("Input Fingerprint");
+    await page.getByTestId("view-presentation").click();
+    await expect(page.locator("#geometry-json")).toHaveCount(0);
+
+    // Interactive Timeline: switch to Decision-Time Audit against live API -> honest AVAILABILITY_TIME_UNKNOWN
+    await expect(page.getByTestId("evidence-timeline")).toBeVisible();
+    await page.getByTestId("mode-decision-time").click();
+    await expect(page.getByTestId("decision-time-controls")).toBeVisible();
+    await expect(page.getByTestId("assessment-status")).toHaveText("Insufficient evidence");
+    await expect(page.getByTestId("reason-list")).toContainText("AVAILABILITY_TIME_UNKNOWN");
+  });
+
+  test("v0.5: runs Galileo OSNMA controlled offline 1-bit tampering comparison and displays explicit 5-point scope disclosures", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByTestId("tab-galileo").click();
+    await page.getByTestId("assess-button").click();
+
+    await expect(page.getByTestId("assessment-status")).toHaveText(
+      "Authenticated (Nav Message Only)",
+    );
+    await expect(page.getByTestId("evidence-graph")).toContainText("OSNMA_SBF_WN1253_PKID1");
+
+    // Verify all 5 explicit Galileo verification disclosures
+    const disclosures = page.getByTestId("galileo-scope-disclosures");
+    await expect(disclosures).toContainText("2023 Public Test Phase");
+    await expect(disclosures).toContainText("Retrospective & Offline");
+    await expect(disclosures).toContainText("Not Positioning Accuracy");
+    await expect(disclosures).toContainText("No Real-Time Replay Protection");
+    await expect(disclosures).toContainText("Trust Anchor Dependency");
+
+    // Run real local 4-layer verifier on Original vs 1-bit Tampered SBF copy
+    await page.getByTestId("run-tamper-demo-button").click();
+    const comparison = page.getByTestId("tamper-comparison-result");
+    await expect(comparison).toBeVisible();
+    await expect(comparison).toContainText("SYNTHETIC TAMPER TEST");
+    await expect(comparison).toContainText("188 / 188 verified");
+    await expect(comparison).toContainText("authentication_failed");
+    await expect(comparison).toContainText("AUTHENTICATION_FAILED");
+    await expect(comparison).toContainText("1 FAILED (HMAC mismatch detected)");
+
+    await page.screenshot({
+      path: "test-results/evidence-inspector-v05-galileo.png",
+      fullPage: true,
+    });
+  });
 });

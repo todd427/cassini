@@ -1,8 +1,11 @@
 import type {
+  AssessmentGraphResponse,
   AssessmentResponse,
   ClaimRequest,
   EvidenceListResponse,
+  GalileoTamperComparison,
   HealthResponse,
+  LocalMapContext,
 } from "../types/contract";
 
 export const API_BASE_URL = (
@@ -33,6 +36,11 @@ async function parseErrorResponse(res: Response): Promise<ApiError> {
         details.push(loc ? `${loc}: ${msg}` : msg);
       }
       message = `Validation error (HTTP ${res.status})`;
+    } else if (body?.detail && typeof body.detail === "object") {
+      message = `Validation error (HTTP ${res.status})`;
+      if (typeof body.detail.message === "string") {
+        details.push(body.detail.message);
+      }
     } else if (typeof body?.detail === "string") {
       message = body.detail;
     }
@@ -57,7 +65,7 @@ export async function fetchEvidence(signal?: AbortSignal): Promise<EvidenceListR
 export async function submitAssessment(
   payload: ClaimRequest | Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<AssessmentResponse> {
+): Promise<{ result: AssessmentResponse; assessedAtHeader: string | null }> {
   const res = await fetch(`${API_BASE_URL}/v1/assess`, {
     method: "POST",
     headers: {
@@ -68,5 +76,50 @@ export async function submitAssessment(
     signal,
   });
   if (!res.ok) throw await parseErrorResponse(res);
-  return (await res.json()) as AssessmentResponse;
+  const assessedAtHeader = res.headers.get("X-EIP-Assessed-At");
+  return {
+    result: (await res.json()) as AssessmentResponse,
+    assessedAtHeader,
+  };
+}
+
+export async function fetchAssessmentGraph(
+  payload: ClaimRequest | Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<AssessmentGraphResponse> {
+  const res = await fetch(`${API_BASE_URL}/v1/assess/graph`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  return (await res.json()) as AssessmentGraphResponse;
+}
+
+export async function runGalileoTamperDemo(
+  signal?: AbortSignal,
+): Promise<GalileoTamperComparison> {
+  const res = await fetch(`${API_BASE_URL}/v1/galileo/tamper-demo`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  return (await res.json()) as GalileoTamperComparison;
+}
+
+export async function fetchLocalMapContext(
+  signal?: AbortSignal,
+): Promise<LocalMapContext | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/v1/context/lough-funshinagh`, { signal });
+    if (!res.ok) return null;
+    return (await res.json()) as LocalMapContext;
+  } catch {
+    return null;
+  }
 }

@@ -15,6 +15,9 @@ All JSON payloads are UTF-8. All timestamps are timezone-aware UTC ISO 8601 (`Z`
 | `GET` | `/v1/policies` | **v0.2 (new)** | List full `PolicySpec` definitions for all registered assessment policies |
 | `GET` | `/v1/evidence` | v0.1 / v0.2 | Return `{"items": [Evidence, ...]}` from the configured `EvidenceStore` (`EIP_EVIDENCE_PATH`, default `sample_data/evidence.json`) |
 | `POST` | `/v1/assess` | v0.1 / v0.2 | Dispatch a `ClaimRequest` to the matching registered policy and return deterministic `AssessmentResponse` (plus `X-EIP-Assessed-At` UTC response header) |
+| `POST` | `/v1/assess/graph` | **v0.5 (new)** | Run deterministic assessment and return `AssessmentGraphResponse` (`assessment`, `evidence`, and domain-independent provenance/evidence `graph`) |
+| `POST` | `/v1/galileo/tamper-demo` | **v0.5 (new)** | Run local 4-layer OSNMA verifier on both the preserved genuine SBF and a clearly labelled synthetic 1-bit ephemeris-tampered copy, returning side-by-side assessments and graphs |
+| `GET` | `/v1/context/lough-funshinagh` | **v0.5 (new)** | Serve offline display-only baseline water extent and locality landmarks for Lough Funshinagh (derived from licensed CEMS `EMSR718`; never used in spatial assessment) |
 | `GET` | `/openapi.json` | v0.1 / v0.2 | Auto-generated OpenAPI schema |
 
 CORS is restricted to `http://localhost:5173` and `http://127.0.0.1:5173`. No live external network calls occur during assessment.

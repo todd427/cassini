@@ -97,6 +97,100 @@ export interface ClaimRequest {
   source_label: string;
   synthetic: boolean;
   attributes?: Record<string, unknown>;
+  assessment_mode?: "retrospective" | "decision_time";
+  decision_time?: string | null;
+}
+
+export type GraphNodeType =
+  | "claim"
+  | "evidence"
+  | "original_source"
+  | "publisher"
+  | "upstream_dependency"
+  | "missing_evidence";
+
+export interface GraphNode {
+  id: string;
+  node_type: GraphNodeType;
+  label: string;
+  subtitle: string | null;
+  status: string | null;
+  relation_role:
+    | "potentially_contradicting"
+    | "supporting"
+    | "contextual"
+    | "failed_authentication"
+    | "unsuitable"
+    | "inconclusive"
+    | null;
+  authentication: string | null;
+  freshness:
+    | "fresh"
+    | "stale"
+    | "time_unknown"
+    | "not_available_at_decision"
+    | "availability_unknown"
+    | null;
+  independence_group: number | null;
+  synthetic: boolean;
+  observed_at: string | null;
+  available_at: string | null;
+  retrieved_at: string | null;
+  age_hours: number | null;
+  reasons: string[];
+  limitations: string[];
+  metadata: Record<string, unknown>;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  relation: string;
+  label: string;
+  shared: boolean;
+}
+
+export interface EvidenceGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  independence_status: string;
+  independent_group_count: number | null;
+  assessed_source_count: number;
+}
+
+export interface AssessmentGraphResponse {
+  assessment: AssessmentResponse;
+  evidence: Evidence[];
+  graph: EvidenceGraph;
+}
+
+export interface GalileoTamperDetails {
+  svid: number;
+  svid_label: string;
+  gst_week: number;
+  gst_tow: number;
+  word_type: number;
+  word_description: string;
+  bit_mask: string;
+  original_word_hex: string;
+  tampered_word_hex: string;
+  sbf_block_crc_recomputed: boolean;
+  note: string;
+}
+
+export interface GalileoTamperComparison {
+  tamper_details: GalileoTamperDetails;
+  disclaimer: string;
+  original: AssessmentGraphResponse;
+  tampered: AssessmentGraphResponse;
+}
+
+export interface LocalMapContext {
+  display_only: boolean;
+  licence?: string;
+  baseline_water_extent: GeoJSON.FeatureCollection | null;
+  landmarks: GeoJSON.FeatureCollection | null;
 }
 
 export interface EvidenceFinding {

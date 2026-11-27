@@ -1,6 +1,6 @@
-# Evidence Integrity Platform (EIP) — v0.4.0
+# Evidence Integrity Platform (EIP) — v0.5.0
 
-An extensible, domain-independent evidence assessment platform with a deterministic REST API (Contract `v0.1` compatible + `v0.2`/`v0.3`/`v0.4` discovery, temporal integrity, source independence, genuine multi-source corroboration, and local Galileo OSNMA cryptographic verification) and one unified reference web application (**Evidence Inspector**).
+An extensible, domain-independent evidence assessment platform with a deterministic REST API (Contract `v0.1` compatible + `v0.2`–`v0.5` discovery, temporal integrity, source independence, genuine multi-source corroboration, local Galileo OSNMA cryptographic verification, and backend-derived provenance/evidence graphs) and one unified presentation-grade reference web application (**Evidence Inspector**).
 
 > **Disclaimer:** EIP is an evidence-consistency and cryptographic navigation-message verification tool, **not** a truth oracle, safety certification, positioning-accuracy guarantee, or emergency routing service. No LLM and no arbitrary numerical truth score are used.
 
@@ -18,27 +18,32 @@ Connectors (connectors/)             ──► Storage & Normalisation (core/sto
                                            • Integrity & SHA-256 checks (core/integrity.py)
 Domain Policies (policies/)          ──►   • 6 Timestamps & Temporal Modes (core/temporal.py)
   • PolicyRegistry & PolicySpec            • Source Independence Analysis (core/independence.py)
-  • FloodRoadPolicy (flood-road-0.1)       • Optional WGS84 Spatial Primitives (core/spatial.py)
-  • GalileoOsnmaPolicy (galileo-osnma-0.1)           │
+  • FloodRoadPolicy (flood-road-0.1)       • Domain-Independent Evidence Graph (core/graph.py)
+  • GalileoOsnmaPolicy (galileo-osnma-0.1) • Optional WGS84 Spatial Primitives (core/spatial.py)
+                                                     │
                                                      ▼
                                          REST API (api/main.py — 127.0.0.1:8000)
                                            • GET  /health, /v1/evidence, /openapi.json
                                            • GET  /v1/capabilities, /v1/policies
-                                           • POST /v1/assess (retrospective & decision_time)
+                                           • POST /v1/assess & POST /v1/assess/graph
+                                           • POST /v1/galileo/tamper-demo
+                                           • GET  /v1/context/lough-funshinagh (offline map context)
                                                      │
                                                      ▼
                                          External Consumers & Evidence Inspector UI (:5173)
-                                           • Environmental (Flood / Road) mode
-                                           • Galileo OSNMA (Navigation Auth) mode
+                                           • Presentation Mode (5-second executive summary) & Technical Inspection Mode
+                                           • Interactive Provenance & Evidence Graph + 6-Timestamp Timeline
+                                           • Environmental Mode (offline Lough Funshinagh map + 2-click road drawing)
+                                           • Galileo OSNMA Mode (4-stage crypto pipeline + 1-bit tamper comparison)
 ```
 
 ### Key Documentation
-- **[CONTRACT.md](CONTRACT.md):** Authoritative Contract interface (`v0.1` compatible + `v0.2`/`v0.3`/`v0.4` extensions).
+- **[CONTRACT.md](CONTRACT.md):** Authoritative Contract interface (`v0.1` compatible + `v0.2`–`v0.5` extensions).
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** Architecture specification, Mermaid diagram, temporal integrity, source independence, and enterprise extension pattern.
 - **[docs/EVIDENCE-SOURCES.md](docs/EVIDENCE-SOURCES.md):** Research, acquisition results, licences, limitations, and independence analysis for Lough Funshinagh (April 2024).
 - **[docs/GALILEO-INTEGRATION.md](docs/GALILEO-INTEGRATION.md):** Galileo OSNMA research, preserved Septentrio SBF & GSC Merkle/Key material, 4-layer local cryptographic verification, and scope limitations.
 - **[docs/POLICY-DEVELOPMENT.md](docs/POLICY-DEVELOPMENT.md):** Step-by-step guide for adding a domain policy without modifying `core/` or `api/`.
-- **[docs/ACCEPTANCE-v0.4.md](docs/ACCEPTANCE-v0.4.md):** Verified v0.4 acceptance audit (see also `v0.3`, `v0.2`, and `v0.1`).
+- **[docs/ACCEPTANCE-v0.5.md](docs/ACCEPTANCE-v0.5.md):** Verified v0.5 acceptance audit (see also `v0.4`, `v0.3`, `v0.2`, and `v0.1`).
 - **[connectors/README.md](connectors/README.md):** Connector instructions, raw archive URLs, and SHA-256 verification.
 
 ---

@@ -1,19 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { AssessmentStatus, Evidence, LineStringGeometry } from "../types/contract";
+import type {
+  AssessmentStatus,
+  Evidence,
+  LineStringGeometry,
+  LocalMapContext,
+} from "../types/contract";
 
 interface EvidenceMapProps {
   evidenceItems: Evidence[];
   claimGeometry: LineStringGeometry | null;
   assessmentStatus: AssessmentStatus | null;
+  localContext: LocalMapContext | null;
+  onCustomRoadChange?: (geom: LineStringGeometry) => void;
 }
 
 type BoundsTuple = [[number, number], [number, number]];
 
 function buildGraticule(): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
-  // Lightweight WGS84 reference grid over Ireland so offline canvas has clear spatial framing
   for (let lon = -11; lon <= -5; lon += 0.05) {
     features.push({
       type: "Feature",
@@ -49,6 +55,10 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       type: "geojson",
       data: buildGraticule(),
     },
+    "baseline-water": {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    },
     coverage: {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
@@ -66,6 +76,10 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       data: { type: "FeatureCollection", features: [] },
     },
     "claim-endpoints": {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    },
+    "draw-draft": {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
     },
@@ -106,7 +120,7 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       paint: {
         "line-color": "#1e2e42",
         "line-width": 1,
-        "line-opacity": enableOsmTiles ? 0.25 : 0.75,
+        "line-opacity": enableOsmTiles ? 0.25 : 0.7,
       },
     },
     {
@@ -115,7 +129,7 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       source: "coverage",
       paint: {
         "fill-color": "#64748b",
-        "fill-opacity": 0.12,
+        "fill-opacity": 0.11,
       },
     },
     {
@@ -129,12 +143,31 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       },
     },
     {
+      id: "baseline-water-fill",
+      type: "fill",
+      source: "baseline-water",
+      paint: {
+        "fill-color": "#1e3a5f",
+        "fill-opacity": 0.52,
+      },
+    },
+    {
+      id: "baseline-water-outline",
+      type: "line",
+      source: "baseline-water",
+      paint: {
+        "line-color": "#3b82f6",
+        "line-width": 1.1,
+        "line-opacity": 0.65,
+      },
+    },
+    {
       id: "flood-fill",
       type: "fill",
       source: "flood",
       paint: {
         "fill-color": "#0ea5e9",
-        "fill-opacity": 0.48,
+        "fill-opacity": 0.5,
       },
     },
     {
@@ -188,6 +221,17 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
         "circle-stroke-width": 2,
       },
     },
+    {
+      id: "draw-draft-points",
+      type: "circle",
+      source: "draw-draft",
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#f59e0b",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      },
+    },
   );
 
   return {
@@ -231,15 +275,36 @@ export function EvidenceMap({
   evidenceItems,
   claimGeometry,
   assessmentStatus,
+  localContext,
+  onCustomRoadChange,
 }: EvidenceMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showFlood, setShowFlood] = useState(true);
   const [showCoverage, setShowCoverage] = useState(true);
+  const [showContext, setShowContext] = useState(true);
   const [useOsmTiles, setUseOsmTiles] = useState(false);
   const [tileNotice, setTileNotice] = useState<string | null>(null);
+
+  // Interactive 2-click road drawing state
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [draftStart, setDraftStart] = useState<[number, number] | null>(null);
+  const drawingModeRef = useRef(drawingMode);
+  const draftStartRef = useRef(draftStart);
+  const onCustomRoadChangeRef = useRef(onCustomRoadChange);
+
+  useEffect(() => {
+    drawingModeRef.current = drawingMode;
+  }, [drawingMode]);
+  useEffect(() => {
+    draftStartRef.current = draftStart;
+  }, [draftStart]);
+  useEffect(() => {
+    onCustomRoadChangeRef.current = onCustomRoadChange;
+  }, [onCustomRoadChange]);
 
   const floodGeoJson = useMemo<GeoJSON.FeatureCollection>(
     () => ({
@@ -291,6 +356,15 @@ export function EvidenceMap({
     [evidenceItems],
   );
 
+  const baselineWaterGeoJson = useMemo<GeoJSON.FeatureCollection>(
+    () =>
+      localContext?.baseline_water_extent ?? {
+        type: "FeatureCollection",
+        features: [],
+      },
+    [localContext],
+  );
+
   const claimGeoJson = useMemo<GeoJSON.FeatureCollection>(
     () => ({
       type: "FeatureCollection",
@@ -318,6 +392,30 @@ export function EvidenceMap({
       })),
     };
   }, [claimGeometry]);
+
+  const draftGeoJson = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!draftStart) return { type: "FeatureCollection", features: [] };
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { role: "draft-start" },
+          geometry: { type: "Point", coordinates: draftStart },
+        },
+      ],
+    };
+  }, [draftStart]);
+
+  // Extract concise indirect contextual telemetry for display bar
+  const gsiItem = useMemo(
+    () => evidenceItems.find((e) => e.kind === "hydrometric_water_level") ?? null,
+    [evidenceItems],
+  );
+  const metItem = useMemo(
+    () => evidenceItems.find((e) => e.kind === "meteorological_rainfall") ?? null,
+    [evidenceItems],
+  );
 
   // Deliberately avoid green "safe" color for any status
   const claimColor =
@@ -358,6 +456,25 @@ export function EvidenceMap({
       setMapReady(true);
     });
 
+    map.on("click", (evt) => {
+      if (!drawingModeRef.current || !onCustomRoadChangeRef.current) return;
+      const pt: [number, number] = [
+        Number(evt.lngLat.lng.toFixed(5)),
+        Number(evt.lngLat.lat.toFixed(5)),
+      ];
+      if (!draftStartRef.current) {
+        setDraftStart(pt);
+      } else {
+        const geom: LineStringGeometry = {
+          type: "LineString",
+          coordinates: [draftStartRef.current, pt],
+        };
+        setDraftStart(null);
+        setDrawingMode(false);
+        onCustomRoadChangeRef.current(geom);
+      }
+    });
+
     map.on("error", (evt) => {
       if (useOsmTiles) {
         setTileNotice("Remote basemap tiles unavailable — displaying offline vector grid fallback.");
@@ -368,47 +485,96 @@ export function EvidenceMap({
 
     mapRef.current = map;
     return () => {
+      for (const m of markersRef.current) m.remove();
+      markersRef.current = [];
       setMapReady(false);
       mapRef.current = null;
       map.remove();
     };
   }, [useOsmTiles]);
 
+  // Update cursor when drawingMode toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    map.getCanvas().style.cursor = drawingMode ? "crosshair" : "";
+  }, [mapReady, drawingMode]);
+
   // Sync GeoJSON sources and styles whenever data or toggles change
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
+    const baselineSrc = map.getSource("baseline-water") as GeoJSONSource | undefined;
     const floodSrc = map.getSource("flood") as GeoJSONSource | undefined;
     const stationsSrc = map.getSource("stations") as GeoJSONSource | undefined;
     const covSrc = map.getSource("coverage") as GeoJSONSource | undefined;
     const claimSrc = map.getSource("claim") as GeoJSONSource | undefined;
     const epSrc = map.getSource("claim-endpoints") as GeoJSONSource | undefined;
+    const draftSrc = map.getSource("draw-draft") as GeoJSONSource | undefined;
 
+    baselineSrc?.setData(baselineWaterGeoJson);
     floodSrc?.setData(floodGeoJson);
     stationsSrc?.setData(stationsGeoJson);
     covSrc?.setData(coverageGeoJson);
     claimSrc?.setData(claimGeoJson);
     epSrc?.setData(endpointGeoJson);
+    draftSrc?.setData(draftGeoJson);
 
     map.setPaintProperty("claim-line", "line-color", claimColor);
     map.setLayoutProperty("flood-fill", "visibility", showFlood ? "visible" : "none");
     map.setLayoutProperty("flood-outline", "visibility", showFlood ? "visible" : "none");
     map.setLayoutProperty("coverage-fill", "visibility", showCoverage ? "visible" : "none");
     map.setLayoutProperty("coverage-outline", "visibility", showCoverage ? "visible" : "none");
+    map.setLayoutProperty(
+      "baseline-water-fill",
+      "visibility",
+      showContext ? "visible" : "none",
+    );
+    map.setLayoutProperty(
+      "baseline-water-outline",
+      "visibility",
+      showContext ? "visible" : "none",
+    );
   }, [
     mapReady,
+    baselineWaterGeoJson,
     floodGeoJson,
     stationsGeoJson,
     coverageGeoJson,
     claimGeoJson,
     endpointGeoJson,
+    draftGeoJson,
     claimColor,
     showFlood,
     showCoverage,
+    showContext,
   ]);
 
-  // Auto-fit bounds to direct flood polygons + active claim (keeps Lough Funshinagh well-framed)
+  // Sync offline HTML landmark labels (zero glyph server / zero network requests)
+  useEffect(() => {
+    const map = mapRef.current;
+    for (const m of markersRef.current) m.remove();
+    markersRef.current = [];
+    if (!map || !mapReady || !showContext || !localContext?.landmarks) return;
+
+    for (const feat of localContext.landmarks.features) {
+      if (feat.geometry.type !== "Point") continue;
+      const [lon, lat] = feat.geometry.coordinates;
+      const name = String(feat.properties?.name ?? "");
+      const kind = String(feat.properties?.kind ?? "locality");
+      if (!name) continue;
+      const el = document.createElement("div");
+      el.className = `map-landmark-label landmark-${kind}`;
+      el.textContent = name;
+      const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([lon, lat])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+  }, [mapReady, showContext, localContext]);
+
+  // Auto-fit bounds to direct flood polygons + active claim
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
@@ -448,6 +614,13 @@ export function EvidenceMap({
     if (bounds) map.fitBounds(bounds, { padding: 40, maxZoom: 13, duration: 350 });
   };
 
+  const toggleDrawing = () => {
+    setDrawingMode((prev) => {
+      if (prev) setDraftStart(null);
+      return !prev;
+    });
+  };
+
   return (
     <section className="map-panel" aria-label="Geospatial evidence map">
       <div className="map-toolbar">
@@ -466,7 +639,15 @@ export function EvidenceMap({
               checked={showCoverage}
               onChange={(e) => setShowCoverage(e.target.checked)}
             />
-            <span>Documented coverage</span>
+            <span>Coverage</span>
+          </label>
+          <label className="chip-toggle">
+            <input
+              type="checkbox"
+              checked={showContext}
+              onChange={(e) => setShowContext(e.target.checked)}
+            />
+            <span>Water &amp; landmarks</span>
           </label>
           <label className="chip-toggle">
             <input
@@ -474,10 +655,20 @@ export function EvidenceMap({
               checked={useOsmTiles}
               onChange={(e) => setUseOsmTiles(e.target.checked)}
             />
-            <span>OSM basemap (optional online)</span>
+            <span>OSM (online)</span>
           </label>
         </div>
         <div className="map-actions">
+          {onCustomRoadChange && (
+            <button
+              type="button"
+              className={`btn-ghost ${drawingMode ? "btn-draw-active" : ""}`}
+              onClick={toggleDrawing}
+              data-testid="draw-road-button"
+            >
+              {drawingMode ? "Cancel Draw" : "Draw Road (2 clicks)"}
+            </button>
+          )}
           <button
             type="button"
             className="btn-ghost"
@@ -497,6 +688,27 @@ export function EvidenceMap({
         </div>
       </div>
 
+      {/* Concise Direct vs Indirect Environmental Context Strip */}
+      {(gsiItem || metItem) && (
+        <div className="map-context-strip" data-testid="env-context-strip">
+          <span className="context-chip chip-direct">
+            <strong>Direct SAR:</strong> CEMS EMSR718 (2024-04-15 06:02Z)
+          </span>
+          {gsiItem && typeof gsiItem.attributes?.stage_maod === "number" && (
+            <span className="context-chip chip-indirect">
+              <strong>Indirect Hydro (GSI_11):</strong> {gsiItem.attributes.stage_maod} mAOD (&gt;p99{" "}
+              {String(gsiItem.attributes.historical_p99_maod ?? "68.90")})
+            </span>
+          )}
+          {metItem && typeof metItem.attributes?.rain_mm === "number" && (
+            <span className="context-chip chip-indirect">
+              <strong>Indirect Met (Mt Dillon):</strong> {metItem.attributes.rain_mm} mm/day ·{" "}
+              {String(metItem.attributes.cumulative_5day_rain_mm ?? "?")} mm (5d, 27 km NNE)
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="map-stage">
         {mapError ? (
           <div className="map-fallback" role="status">
@@ -504,6 +716,14 @@ export function EvidenceMap({
           </div>
         ) : (
           <div ref={containerRef} className="map-canvas" data-testid="map-canvas" />
+        )}
+
+        {drawingMode && (
+          <div className="map-overlay-banner map-overlay-draw" role="status">
+            {draftStart
+              ? `Start point placed (${draftStart[0]}, ${draftStart[1]}). Click a second point on the map to evaluate that road segment.`
+              : "Interactive Road Selector: Click a start point on the map, then click an end point to test any road segment."}
+          </div>
         )}
 
         {!claimGeometry && (
@@ -528,7 +748,10 @@ export function EvidenceMap({
       <div className="map-footer">
         <div className="map-legend" aria-label="Map legend">
           <span className="legend-item">
-            <span className="swatch swatch-flood" /> Mapped flood extent
+            <span className="swatch swatch-flood" /> Direct flood extent
+          </span>
+          <span className="legend-item">
+            <span className="swatch swatch-baseline" /> Baseline water (display context)
           </span>
           <span className="legend-item">
             <span className="swatch swatch-coverage" /> Documented AOI coverage
@@ -545,7 +768,7 @@ export function EvidenceMap({
           </span>
         </div>
         <div className="map-attribution">
-          Offline WGS84 grid | © EU Copernicus EMS · Geological Survey Ireland (CC BY 4.0) · Met Éireann (CC BY 4.0)
+          Offline WGS84 vector canvas | © EU Copernicus EMS · GSI (CC BY 4.0) · Met Éireann (CC BY 4.0)
         </div>
       </div>
     </section>

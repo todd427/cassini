@@ -754,3 +754,149 @@ class GalileoOsnmaConnector:
             retrieved_at=self._retrieved_at,
         )
         return [Evidence.model_validate(raw)]
+
+
+def create_tampered_sbf_copy(sbf_bytes: bytes) -> tuple[bytes, dict[str, Any]]:
+    """Create a controlled in-memory tampered copy of recorded SBF bytes.
+
+    Flips 1 bit inside a genuine Galileo Word Type 1 (ephemeris) navigation
+    payload and recomputes the Septentrio SBF block CRC-16 XMODEM so packet
+    framing remains valid — demonstrating that OSNMA HMAC-SHA-256 catches
+    navigation-message tampering that transport CRCs cannot detect.
+    """
+    raw = bytearray(sbf_bytes)
+    pos = 0
+    seen = 0
+    while pos + 8 <= len(raw):
+        if raw[pos : pos + 2] != b"$@":
+            pos += 1
+            continue
+        _crc_obs, bid_rev, length = struct.unpack_from("<HHH", raw, pos + 2)
+        if length < 8 or length % 4 != 0 or pos + length > len(raw):
+            pos += 1
+            continue
+        if (bid_rev & 0x1FFF) == 4023 and length >= 52:
+            seen += 1
+            if seen > 400:
+                tow_ms, wnc, svid_raw, crc_ok, _vit, src = struct.unpack_from(
+                    "<IHBBBB", raw, pos + 8
+                )
+                words = struct.unpack_from("<8I", raw, pos + 20)
+                wtype = (words[0] >> 24) & 0x3F
+                if crc_ok == 1 and (src & 0x1F) == 17 and wtype == 1:
+                    orig_w1 = words[1]
+                    tampered_w1 = orig_w1 ^ 0x00000400
+                    struct.pack_into("<I", raw, pos + 24, tampered_w1)
+                    new_crc = _crc16_xmodem(bytes(raw[pos + 4 : pos + length]))
+                    struct.pack_into("<H", raw, pos + 2, new_crc)
+                    return bytes(raw), {
+                        "svid": svid_raw - 70,
+                        "svid_label": f"E{svid_raw - 70:02d}",
+                        "gst_week": wnc - 1024,
+                        "gst_tow": tow_ms // 1000,
+                        "word_type": 1,
+                        "word_description": "Galileo I/NAV Word Type 1 (Ephemeris: t0e, M0, e, sqrt(A))",
+                        "bit_mask": "0x00000400",
+                        "original_word_hex": f"0x{orig_w1:08x}",
+                        "tampered_word_hex": f"0x{tampered_w1:08x}",
+                        "sbf_block_crc_recomputed": True,
+                        "note": (
+                            "1 single bit flipped in Word Type 1 ephemeris payload; Septentrio SBF "
+                            "CRC-16 was recomputed so receiver framing still accepts the packet, "
+                            "leaving only OSNMA HMAC-SHA-256 to detect the modification."
+                        ),
+                    }
+        pos += length
+    raise ValueError("Could not locate a suitable Galileo Word Type 1 block to tamper.")
+
+
+def build_tampered_galileo_evidence(
+    sbf_path: Path = DEFAULT_SBF_PATH,
+    merkle_xml_path: Path = DEFAULT_MERKLE_PATH,
+    pubkey_xml_path: Path = DEFAULT_PUBKEY_PATH,
+) -> tuple[Evidence, dict[str, Any]]:
+    """Run real local OSNMA verification on a deliberately tampered copy of the SBF recording."""
+    orig_bytes = sbf_path.resolve().read_bytes()
+    tampered_bytes, tamper_details = create_tampered_sbf_copy(orig_bytes)
+    tampered_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    merkle_sha = compute_file_sha256(merkle_xml_path.resolve())
+    pubkey_sha = compute_file_sha256(pubkey_xml_path.resolve())
+
+    report = verify_sbf_bytes(
+        sbf_bytes=tampered_bytes,
+        merkle_xml_path=merkle_xml_path,
+        pubkey_xml_path=pubkey_xml_path,
+    )
+
+    ev = Evidence.model_validate(
+        {
+            "id": "synthetic-galileo-osnma-tampered-1bit",
+            "source": "galileo_osnma_tamper_test",
+            "product_id": f"TAMPERED_COPY_OSNMA_WN{report.gst_week or 0}_PKID{report.pkid or 0}",
+            "source_url": None,
+            "observed_at": report.observed_at_utc,
+            "available_at": None,
+            "retrieved_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "kind": "gnss_osnma_auth",
+            "geometry": None,
+            "coverage": None,
+            "attributes": {
+                "verification_method": "local_osnma_cryptographic",
+                "locally_verified": True,
+                "osnma_outcome": report.outcome,
+                "authenticated_scope": (
+                    "Controlled offline tamper test copy (1 bit flipped in Galileo I/NAV Word Type 1 ephemeris)"
+                ),
+                "merkle_proof_verified": report.merkle_proof_verified,
+                "ecdsa_kroot_verified": report.ecdsa_kroot_verified,
+                "merkle_root_sha256": report.merkle_root_hex,
+                "merkle_tree_uid": report.merkle_tree_uid,
+                "public_key_uid": report.public_key_uid,
+                "pkid": report.pkid,
+                "pk_type": report.pk_type,
+                "nma_status": report.nma_status,
+                "chain_id": report.chain_id,
+                "key_size_bits": report.key_size_bits,
+                "tag_size_bits": report.tag_size_bits,
+                "mac_lookup_table": report.mac_lookup_table,
+                "gst_week": report.gst_week,
+                "gst_tow_start": report.gst_tow_start,
+                "gst_tow_end": report.gst_tow_end,
+                "receiver_model": report.receiver_model,
+                "receiver_firmware": report.receiver_firmware,
+                "total_complete_subframes": report.total_complete_subframes,
+                "unauthenticated_zero_nma_subframes": report.unauthenticated_zero_nma_subframes,
+                "tesla_verified_subframes": report.tesla_verified_subframes,
+                "tag0_verified_count": report.tag0_verified_count,
+                "tag0_failed_count": report.tag0_failed_count,
+                "tag0_checked_count": report.tag0_checked_count,
+                "authenticated_svids": report.authenticated_svids,
+                "failure_reasons": report.failure_reasons,
+                "merkle_tree_sha256": merkle_sha,
+                "public_key_sha256": pubkey_sha,
+                "tamper_details": tamper_details,
+            },
+            "provenance": {
+                "original_source": (
+                    f"Deliberately modified copy of {report.receiver_model or 'Septentrio'} SBF recording"
+                ),
+                "publishing_organisation": "EIP Local Offline Tamper Demonstration (Synthetic Test)",
+                "upstream_datasets": [
+                    x for x in (report.merkle_tree_uid, report.public_key_uid) if x
+                ],
+                "derived_from": [f"galileo-osnma-sbf-wn{report.gst_week or 0}-pkid{report.pkid or 0}"],
+                "measurement_method": "Local Galileo OSNMA SIS ICD v1.1 verification on 1-bit tampered SBF copy",
+                "shared_dependencies": ["galileo_system_time_gst"],
+            },
+            "authentication": report.authentication,
+            "sha256": tampered_sha,
+            "raw_path": None,
+            "licence": "Synthetic deliberately tampered test copy (derived locally in memory from EUPL-1.2 recording)",
+            "limitations": [
+                "DELIBERATELY TAMPERED SYNTHETIC TEST EVIDENCE: 1 bit was flipped in a copy of the recorded Galileo Word Type 1 ephemeris to demonstrate cryptographic failure detection.",
+                "Merkle proof, ECDSA signature, and TESLA key chain still verify against the unmodified key stream, while Stage 4 HMAC-SHA-256 Tag0 verification fails on the modified subframe.",
+            ],
+            "synthetic": True,
+        }
+    )
+    return ev, tamper_details

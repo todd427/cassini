@@ -6,10 +6,16 @@ from __future__ import annotations
 
 import copy
 import json
+import zipfile
 from pathlib import Path
 from typing import Any
 
+from shapely.geometry import mapping, shape
+from shapely.ops import unary_union
+from shapely.validation import make_valid
+
 from connectors.cems_rapid_mapping import (
+    DEFAULT_RAW_ZIP,
     CemsRapidMappingConnector,
     build_emsr718_example_claims,
 )
@@ -21,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EVIDENCE_OUT = REPO_ROOT / "sample_data" / "evidence.json"
 EXAMPLES_OUT = REPO_ROOT / "sample_data" / "example_claims.json"
 SCENARIOS_DIR = REPO_ROOT / "sample_data" / "scenarios"
+CONTEXT_OUT = REPO_ROOT / "sample_data" / "context" / "lough_funshinagh_context.json"
 
 
 def build_genuine_evidence_bundle() -> list[dict[str, Any]]:
@@ -406,6 +413,64 @@ def main() -> None:
         out = SCENARIOS_DIR / f"{name}.json"
         out.write_text(json.dumps(bundle, indent=2) + "\n", encoding="utf-8")
         print(f"Wrote scenario: {out.relative_to(REPO_ROOT)}")
+
+    # Extract lightweight display-only local geographical context from licensed EMSR718 ZIP
+    with zipfile.ZipFile(DEFAULT_RAW_ZIP, "r") as z:
+        water_fc = json.loads(
+            z.read("EMSR718_AOI02_DEL_MONIT01_waterExtentA_v2.json").decode("utf-8")
+        )
+    water_geoms = [make_valid(shape(f["geometry"])) for f in water_fc.get("features", [])]
+    water_union = unary_union(water_geoms).simplify(0.00012, preserve_topology=True)
+    context_doc = {
+        "display_only": True,
+        "licence": (
+            "Copernicus EMS Rapid Mapping (© European Union, 2024) — simplified strictly for "
+            "offline map visual context; NEVER used for spatial assessment."
+        ),
+        "baseline_water_extent": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"name": "Lough Funshinagh Water Extent (CEMS EMSR718)"},
+                    "geometry": mapping(water_union),
+                }
+            ],
+        },
+        "landmarks": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"name": "Lough Funshinagh Basin", "kind": "locality"},
+                    "geometry": {"type": "Point", "coordinates": [-8.118, 53.505]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"name": "GSI_11 Turlough Gauge (69.37 mAOD)", "kind": "gauge"},
+                    "geometry": {"type": "Point", "coordinates": [-8.08494347, 53.49813653]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"name": "Ballagh (East Basin)", "kind": "locality"},
+                    "geometry": {"type": "Point", "coordinates": [-8.105, 53.492]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"name": "Rahara (South-West AOI)", "kind": "locality"},
+                    "geometry": {"type": "Point", "coordinates": [-8.165, 53.465]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"name": "Met Éireann Mt Dillon (27 km NNE)", "kind": "met_station"},
+                    "geometry": {"type": "Point", "coordinates": [-7.981, 53.727]},
+                },
+            ],
+        },
+    }
+    CONTEXT_OUT.parent.mkdir(parents=True, exist_ok=True)
+    CONTEXT_OUT.write_text(json.dumps(context_doc, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote local offline display context to {CONTEXT_OUT.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":
