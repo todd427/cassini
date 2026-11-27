@@ -129,4 +129,41 @@ test.describe("Evidence Inspector E2E", () => {
     await expect(page.getByTestId("findings-list")).toContainText("contextual_support");
     await expect(page.getByTestId("findings-list")).toContainText("Unknown (null)");
   });
+
+  test("evaluates genuine locally verified Galileo OSNMA navigation auth and rejects positioning accuracy claims", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Switch to Galileo OSNMA mode within the same unified Evidence Inspector
+    await page.getByTestId("tab-galileo").click();
+    await expect(page.getByTestId("galileo-crypto-panel")).toBeVisible();
+    await expect(page.getByTestId("galileo-crypto-panel")).toContainText("188 / 188");
+    await expect(page.getByTestId("galileo-crypto-panel")).toContainText("Septentrio mosaic-X5");
+    await expect(page.getByTestId("provenance-card").first()).toContainText(
+      "OSNMA_SBF_WN1253_PKID1",
+    );
+
+    // 1) Genuine locally verified navigation-message authentication
+    await page.getByTestId("assess-button").click();
+    await expect(page.getByTestId("assessment-status")).toHaveText(
+      "Authenticated (Nav Message Only)",
+    );
+    await expect(page.getByTestId("active-policy-version")).toHaveText("galileo-osnma-0.1");
+    await expect(page.getByTestId("reason-list")).toContainText("OSNMA_LOCALLY_VERIFIED");
+    await expect(page.getByTestId("findings-list")).toContainText("local_osnma_cryptographic");
+
+    await page.screenshot({
+      path: "test-results/evidence-inspector-galileo.png",
+      fullPage: true,
+    });
+
+    // 2) Positioning accuracy claim -> Evidence unsuitable
+    await page.locator("#preset-select").selectOption("galileo-positioning-unsuitable");
+    await page.getByTestId("assess-button").click();
+    await expect(page.getByTestId("assessment-status")).toHaveText("Evidence unsuitable");
+    await expect(page.getByTestId("reason-list")).toContainText(
+      "NAV_AUTH_INSUFFICIENT_FOR_POSITIONING",
+    );
+  });
 });

@@ -58,13 +58,13 @@ def test_capabilities_and_evidence_api_expose_all_three_genuine_sources() -> Non
     ev_res = client.get("/v1/evidence")
     assert ev_res.status_code == 200
     items = ev_res.json()["items"]
-    assert len(items) == 3
+    assert len(items) >= 3
     assert all(item["synthetic"] is False for item in items)
-    assert {item["source"] for item in items} == {
+    assert {
         "copernicus_ems_rapid_mapping",
         "gsi_gwlevel",
         "met_eireann_daily",
-    }
+    }.issubset({item["source"] for item in items})
 
 
 def test_all_v03_demonstration_scenarios() -> None:

@@ -11,8 +11,9 @@ All connectors implement `connectors.base.EvidenceConnector` (`metadata`, `load_
 | `connectors/cems_rapid_mapping.py` | Copernicus EMS `EMSR718_AOI02_DEL_MONIT01_v2` (COSMO-SkyMed 3.0 m SAR) | `2024-04-15T06:02:08Z` | `null` (unknown) | **Direct** (`flood_extent`, 103 polygons) | `sample_data/raw/EMSR718_AOI02_DEL_MONIT01_v2.zip`<br>`2f2039bd645de3f8f1a120ea717287bb3640e421f94e107dc98a9353b95ab947` | Copernicus EMS Rapid Mapping (© EU, 2024) |
 | `connectors/gsi_gwlevel.py` | Geological Survey Ireland `GSI_11` Lough Funshinagh (in-situ pressure transducer, `69.37 mAOD`) | `2024-04-15T06:00:00Z` | `null` (unknown; uploaded daily) | **Indirect contextual** (`hydrometric_water_level`) | `sample_data/raw/GSI_11_Lough_Funshinagh.csv`<br>`89a136da9802d7ee055431d6e4e63d0298715785de11e2ddbf4e365419cfa3d3` | CC BY 4.0 (GSI / Govt. of Ireland) |
 | `connectors/met_eireann.py` | Met Éireann Station `1975` Mount Dillon (`6.1 mm`/day, `26.7 mm` 5-day) | `2024-04-15T00:00:00Z` | `null` (unknown) | **Indirect contextual** (`meteorological_rainfall`) | `sample_data/raw/MetEireann_MtDillon_dly1975.csv`<br>`8318023567c25839d291cc5291060f340b453cb612236f64fc6324edb1591744` | CC BY 4.0 (Met Éireann) |
+| `connectors/galileo_osnma.py` | Galileo E1-B OSNMA (`OSNMA_SBF_WN1253_PKID1`, Septentrio `mosaic-X5`, `188/188` ADKD=0 tags verified locally) | `2023-08-27T20:04:42Z` | `null` (unknown) | **Cryptographic Nav-Auth** (`gnss_osnma_auth`) | `sample_data/raw/galileo/osnma_new_config.sbf`<br>`c68444c7395c346753cea5d280c6beafa2fff2b42fbd023b05add2e25a88cb56` | EUPL-1.2 (`Algafix/OSNMA`) & GSC Public Material (© EU) |
 
-See `docs/EVIDENCE-SOURCES.md` for full source research, rejected/blocked candidates, and independence analysis.
+See `docs/EVIDENCE-SOURCES.md` and `docs/GALILEO-INTEGRATION.md` for full source research, local cryptographic verification details, rejected candidates, and independence analysis.
 
 ---
 

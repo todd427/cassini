@@ -13,6 +13,7 @@ from connectors.cems_rapid_mapping import (
     CemsRapidMappingConnector,
     build_emsr718_example_claims,
 )
+from connectors.galileo_osnma import GalileoOsnmaConnector
 from connectors.gsi_gwlevel import GsiGwlevelConnector
 from connectors.met_eireann import MetEireannDailyConnector
 
@@ -23,7 +24,7 @@ SCENARIOS_DIR = REPO_ROOT / "sample_data" / "scenarios"
 
 
 def build_genuine_evidence_bundle() -> list[dict[str, Any]]:
-    """Load all 3 genuine, independent Lough Funshinagh evidence sources offline."""
+    """Load all 4 genuine independent evidence sources offline (Copernicus, GSI, Met Éireann, Galileo OSNMA)."""
     connectors = [
         CemsRapidMappingConnector(retrieved_at="2026-11-27T16:00:00Z"),
         GsiGwlevelConnector(
@@ -34,6 +35,7 @@ def build_genuine_evidence_bundle() -> list[dict[str, Any]]:
             target_date_utc="2024-04-15",
             retrieved_at="2026-11-27T16:44:00Z",
         ),
+        GalileoOsnmaConnector(retrieved_at="2026-11-27T16:58:00Z"),
     ]
     items: list[dict[str, Any]] = []
     for conn in connectors:
@@ -214,12 +216,161 @@ def build_v03_scenarios(genuine_bundle: list[dict[str, Any]]) -> dict[str, dict[
     }
 
 
+def build_v04_galileo_scenarios(
+    genuine_bundle: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Build reproducible v0.4 Galileo OSNMA scenarios (genuine + clearly labelled synthetic)."""
+    galileo_ev = next(ev for ev in genuine_bundle if ev["kind"] == "gnss_osnma_auth")
+
+    synth_failed = copy.deepcopy(galileo_ev)
+    synth_failed["id"] = "synthetic-galileo-tampered-mac-failed"
+    synth_failed["authentication"] = "failed"
+    synth_failed["raw_path"] = None
+    synth_failed["sha256"] = None
+    synth_failed["synthetic"] = True
+    synth_failed["attributes"]["osnma_outcome"] = "failed"
+    synth_failed["attributes"]["tag0_verified_count"] = 0
+    synth_failed["attributes"]["tag0_failed_count"] = 1
+    synth_failed["attributes"]["failure_reasons"] = ["MAC_TAG_VERIFICATION_FAILED"]
+    synth_failed["limitations"] = [
+        "Synthetic tamper test fixture representing a failed HMAC-SHA-256 Tag0 verification."
+    ]
+
+    synth_pending = copy.deepcopy(galileo_ev)
+    synth_pending["id"] = "synthetic-galileo-pending-tesla"
+    synth_pending["authentication"] = "unknown"
+    synth_pending["raw_path"] = None
+    synth_pending["sha256"] = None
+    synth_pending["synthetic"] = True
+    synth_pending["attributes"]["osnma_outcome"] = "pending"
+    synth_pending["attributes"]["tesla_verified_subframes"] = 0
+    synth_pending["attributes"]["tag0_verified_count"] = 0
+    synth_pending["limitations"] = [
+        "Synthetic pending fixture: awaiting delayed TESLA key disclosure in next 30s subframe."
+    ]
+
+    synth_unavailable = copy.deepcopy(galileo_ev)
+    synth_unavailable["id"] = "synthetic-galileo-outage-unavailable"
+    synth_unavailable["authentication"] = "unknown"
+    synth_unavailable["raw_path"] = None
+    synth_unavailable["sha256"] = None
+    synth_unavailable["synthetic"] = True
+    synth_unavailable["attributes"]["osnma_outcome"] = "unavailable"
+    synth_unavailable["attributes"]["tag0_verified_count"] = 0
+    synth_unavailable["limitations"] = [
+        "Synthetic outage fixture representing NMA_Header=0x00 (OSNMA broadcast unavailable)."
+    ]
+
+    synth_external = copy.deepcopy(galileo_ev)
+    synth_external["id"] = "synthetic-galileo-externally-reported"
+    synth_external["authentication"] = "unknown"
+    synth_external["raw_path"] = None
+    synth_external["sha256"] = None
+    synth_external["synthetic"] = True
+    synth_external["attributes"]["verification_method"] = "externally_reported"
+    synth_external["attributes"]["locally_verified"] = False
+    synth_external["attributes"]["osnma_outcome"] = "authenticated"
+    synth_external["limitations"] = [
+        "Synthetic fixture: external receiver flag claimed authentication without local cryptographic verification."
+    ]
+
+    base_nav_claim = {
+        "claim_id": "galileo-nav-e27-20230827",
+        "claim_type": "gnss_nav_message_authenticated",
+        "geometry": None,
+        "claimed_at": "2023-08-27T20:10:00Z",
+        "source_label": "Synthetic claim against genuine recorded Galileo E1-B SBF",
+        "synthetic": True,
+        "attributes": {"svid": 27},
+    }
+
+    return {
+        "galileo_genuine_authenticated": {
+            "description": (
+                "Genuine locally verified Galileo E1-B SBF recording (188/188 ADKD=0 tags verified "
+                "via GSC Merkle Root + ECDSA P-256 + TESLA SHA-256 + HMAC-SHA-256)."
+            ),
+            "uses_genuine_evidence": True,
+            "evidence": [galileo_ev],
+            "claim": base_nav_claim,
+            "expected_status": "authenticated",
+            "expected_reasons": ["OSNMA_LOCALLY_VERIFIED"],
+        },
+        "galileo_tampered_failed": {
+            "description": "Explicitly synthetic tampered navigation message failing OSNMA MAC verification.",
+            "uses_genuine_evidence": False,
+            "evidence": [synth_failed],
+            "claim": {**base_nav_claim, "claim_id": "galileo-nav-tampered"},
+            "expected_status": "authentication_failed",
+            "expected_reasons": ["AUTHENTICATION_FAILED"],
+        },
+        "galileo_pending_tesla": {
+            "description": "Explicitly synthetic pending state awaiting delayed TESLA key disclosure.",
+            "uses_genuine_evidence": False,
+            "evidence": [synth_pending],
+            "claim": {**base_nav_claim, "claim_id": "galileo-nav-pending"},
+            "expected_status": "authentication_pending",
+            "expected_reasons": ["OSNMA_AUTHENTICATION_PENDING"],
+        },
+        "galileo_unavailable_outage": {
+            "description": "Explicitly synthetic outage state where OSNMA bits are unavailable.",
+            "uses_genuine_evidence": False,
+            "evidence": [synth_unavailable],
+            "claim": {**base_nav_claim, "claim_id": "galileo-nav-unavailable"},
+            "expected_status": "authentication_unavailable",
+            "expected_reasons": ["OSNMA_AUTHENTICATION_UNAVAILABLE"],
+        },
+        "galileo_externally_reported_unknown": {
+            "description": (
+                "Explicitly synthetic externally reported authentication flag without local verification; "
+                "must remain authentication_unknown."
+            ),
+            "uses_genuine_evidence": False,
+            "evidence": [synth_external],
+            "claim": {**base_nav_claim, "claim_id": "galileo-nav-external-unverified"},
+            "expected_status": "authentication_unknown",
+            "expected_reasons": ["OSNMA_EXTERNALLY_REPORTED_UNVERIFIED"],
+        },
+        "galileo_stale_observation": {
+            "description": "Claim timestamp 3 hours after genuine recorded Galileo OSNMA observation (>1h window).",
+            "uses_genuine_evidence": True,
+            "evidence": [galileo_ev],
+            "claim": {
+                **base_nav_claim,
+                "claim_id": "galileo-nav-stale",
+                "claimed_at": "2023-08-27T23:30:00Z",
+            },
+            "expected_status": "insufficient_evidence",
+            "expected_reasons": ["OBSERVATION_STALE"],
+        },
+        "galileo_positioning_unsuitable": {
+            "description": (
+                "Claim asserting user positioning accuracy evaluated against genuine authenticated "
+                "Galileo OSNMA evidence: must return evidence_unsuitable."
+            ),
+            "uses_genuine_evidence": True,
+            "evidence": [galileo_ev],
+            "claim": {
+                "claim_id": "galileo-position-accuracy-claim",
+                "claim_type": "gnss_position_accurate",
+                "geometry": None,
+                "claimed_at": "2023-08-27T20:10:00Z",
+                "source_label": "Synthetic positioning-accuracy claim (scope boundary demo)",
+                "synthetic": True,
+                "attributes": {},
+            },
+            "expected_status": "evidence_unsuitable",
+            "expected_reasons": ["NAV_AUTH_INSUFFICIENT_FOR_POSITIONING"],
+        },
+    }
+
+
 def main() -> None:
     genuine_bundle = build_genuine_evidence_bundle()
     EVIDENCE_OUT.write_text(json.dumps(genuine_bundle, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {len(genuine_bundle)} genuine independent evidence records to {EVIDENCE_OUT}:")
     for ev in genuine_bundle:
-        print(f"  - {ev['id']} ({ev['source']}, kind={ev['kind']}, observed={ev['observed_at']}, sha256={ev['sha256'][:12]}...)")
+        print(f"  - {ev['id']} ({ev['source']}, kind={ev['kind']}, auth={ev['authentication']}, observed={ev['observed_at']}, sha256={ev['sha256'][:12]}...)")
 
     examples = build_emsr718_example_claims()
     EXAMPLES_OUT.write_text(json.dumps(examples, indent=2) + "\n", encoding="utf-8")
@@ -227,9 +378,7 @@ def main() -> None:
     SCENARIOS_DIR.mkdir(parents=True, exist_ok=True)
     scenarios = build_v03_scenarios(genuine_bundle)
     for name, bundle in scenarios.items():
-        # Store lightweight reference summary + evidence/claim so each scenario is self-contained & replayable
         out = SCENARIOS_DIR / f"{name}.json"
-        # To avoid duplicating 1.1MB CEMS polygon 5 times in git, reference genuine evidence IDs when exact match
         compact = {
             "description": bundle["description"],
             "uses_genuine_evidence": bundle["uses_genuine_evidence"],
@@ -250,6 +399,12 @@ def main() -> None:
             ],
         }
         out.write_text(json.dumps(compact, indent=2) + "\n", encoding="utf-8")
+        print(f"Wrote scenario: {out.relative_to(REPO_ROOT)}")
+
+    galileo_scenarios = build_v04_galileo_scenarios(genuine_bundle)
+    for name, bundle in galileo_scenarios.items():
+        out = SCENARIOS_DIR / f"{name}.json"
+        out.write_text(json.dumps(bundle, indent=2) + "\n", encoding="utf-8")
         print(f"Wrote scenario: {out.relative_to(REPO_ROOT)}")
 
 

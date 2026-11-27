@@ -169,6 +169,13 @@ In addition to policy-defined reason codes (such as `FLOOD_EXTENT_INTERSECTS`, `
 - Policies declare `required_evidence_kinds` (direct observations) separately from `optional_evidence_kinds` (indirect contextual observations, e.g. `hydrometric_water_level` and `meteorological_rainfall` in `flood-road`).
 - Per-source findings for indirect contextual observations use statuses `contextual_support` or `contextual_neutral` and **never** alone produce `potential_conflict` or `no_mapped_overlap` for a specific road segment. If only indirect observations qualify, the overall status remains `insufficient_evidence` with `INDIRECT_EVIDENCE_ONLY`.
 
+### Galileo OSNMA Navigation-Message Authentication Policy (`galileo-osnma-0.1`, v0.4)
+- Registered alongside `flood-road-0.1` via `PolicyRegistry` (discoverable via `GET /v1/capabilities` and `GET /v1/policies`).
+- Supported claim types: `gnss_nav_message_authenticated` (optional `attributes.svid` 1–36) and `gnss_position_accurate` (explicitly returns `evidence_unsuitable` with `NAV_AUTH_INSUFFICIENT_FOR_POSITIONING`).
+- Required evidence kind: `gnss_osnma_auth` (`geometry: null`).
+- Outcomes: `authenticated`, `authentication_failed`, `authentication_pending`, `authentication_unavailable`, `authentication_unknown`, `evidence_unsuitable`, `insufficient_evidence`.
+- `authentication: "verified"` and status `authenticated` require `attributes.verification_method == "local_osnma_cryptographic"` and `attributes.locally_verified == true`. Externally reported authentication without local cryptographic verification returns `authentication_unknown` (`OSNMA_EXTERNALLY_REPORTED_UNVERIFIED`).
+
 ### Source Independence Statuses
 - `single_source` — 1 evidence source evaluated.
 - `shared_dependencies_detected` — 2+ sources share an `original_source`, `upstream_datasets`, `derived_from` lineage, `shared_dependencies`, or `product_id`; grouped into `correlated_groups` so derived products never count as independent corroboration.

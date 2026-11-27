@@ -3,7 +3,13 @@ export type AuthenticationStatus = "unknown" | "verified" | "failed";
 export type AssessmentStatus =
   | "potential_conflict"
   | "no_mapped_overlap"
-  | "insufficient_evidence";
+  | "insufficient_evidence"
+  | "authenticated"
+  | "authentication_failed"
+  | "authentication_pending"
+  | "authentication_unavailable"
+  | "authentication_unknown"
+  | "evidence_unsuitable";
 
 export type ReasonCode =
   | "FLOOD_EXTENT_INTERSECTS"
@@ -21,6 +27,13 @@ export type ReasonCode =
   | "AUTHENTICATION_FAILED"
   | "NOT_AVAILABLE_AT_DECISION_TIME"
   | "AVAILABILITY_TIME_UNKNOWN"
+  | "OSNMA_LOCALLY_VERIFIED"
+  | "OSNMA_AUTHENTICATION_PENDING"
+  | "OSNMA_AUTHENTICATION_UNAVAILABLE"
+  | "OSNMA_EXTERNALLY_REPORTED_UNVERIFIED"
+  | "OSNMA_AUTHENTICATION_UNKNOWN"
+  | "NAV_AUTH_INSUFFICIENT_FOR_POSITIONING"
+  | "SVID_NOT_PRESENT"
   | string;
 
 export interface PointGeometry {
@@ -78,11 +91,12 @@ export interface Evidence {
 
 export interface ClaimRequest {
   claim_id: string;
-  claim_type: "road_passable";
-  geometry: LineStringGeometry;
+  claim_type: string;
+  geometry: LineStringGeometry | null;
   claimed_at: string;
   source_label: string;
   synthetic: boolean;
+  attributes?: Record<string, unknown>;
 }
 
 export interface EvidenceFinding {
@@ -114,6 +128,13 @@ export interface TemporalContext {
   unknown_availability_ids: string[];
 }
 
+export interface AssessmentTraceability {
+  policy_id: string;
+  policy_version: string;
+  input_fingerprint: string;
+  assessed_at: string | null;
+}
+
 export interface AssessmentResponse {
   claim_id: string;
   status: AssessmentStatus;
@@ -126,6 +147,7 @@ export interface AssessmentResponse {
   assessment_mode?: "retrospective" | "decision_time";
   temporal_context?: TemporalContext | null;
   independence?: IndependenceSummary | null;
+  traceability?: AssessmentTraceability | null;
 }
 
 export interface EvidenceListResponse {
@@ -155,9 +177,45 @@ export const STATUS_META: Record<
   },
   insufficient_evidence: {
     label: "Insufficient evidence",
-    summary: "Available observations cannot establish or rule out direct flood overlap for this claim.",
-    caution: "Never infer absence of flooding or safety from stale, missing, indirect-only, or out-of-coverage evidence.",
+    summary: "Available observations cannot establish or rule out the claim under policy criteria.",
+    caution: "Never infer absence of flooding, safety, or authenticity from stale, missing, indirect-only, or out-of-coverage evidence.",
     tone: "muted",
+  },
+  authenticated: {
+    label: "Authenticated (Nav Message Only)",
+    summary: "Broadcast Galileo E1-B I/NAV ADKD=0 navigation data bits passed local 4-layer OSNMA cryptographic verification.",
+    caution: "Authenticates navigation message data ONLY — NOT user position accuracy, receiver integrity, or immunity to meaconing/relay spoofing.",
+    tone: "neutral",
+  },
+  authentication_failed: {
+    label: "Authentication failed",
+    summary: "Local Galileo OSNMA cryptographic verification failed (signature, Merkle proof, TESLA chain, or MAC mismatch).",
+    caution: "Navigation data failed cryptographic verification and must not be trusted.",
+    tone: "conflict",
+  },
+  authentication_pending: {
+    label: "Authentication pending",
+    summary: "Navigation data received, awaiting delayed TESLA key disclosure or complete DSM-KROOT assembly.",
+    caution: "Pending authentication is NOT verified authentication.",
+    tone: "muted",
+  },
+  authentication_unavailable: {
+    label: "Authentication unavailable",
+    summary: "OSNMA authentication bits were absent or unavailable in the recorded broadcast.",
+    caution: "Absence of OSNMA does not establish tampering or authenticity.",
+    tone: "muted",
+  },
+  authentication_unknown: {
+    label: "Authentication unknown",
+    summary: "Authentication status was not locally verified (including externally reported receiver flags).",
+    caution: "Externally reported authentication without local cryptographic re-verification remains unverified.",
+    tone: "muted",
+  },
+  evidence_unsuitable: {
+    label: "Evidence unsuitable",
+    summary: "Galileo OSNMA navigation-message authentication cannot establish this claim type.",
+    caution: "Cryptographically authenticated navigation bits do NOT prove accurate user positioning, trustworthy receiver behaviour, or protection against all spoofing.",
+    tone: "conflict",
   },
 };
 
@@ -184,7 +242,7 @@ export const REASON_EXPLANATIONS: Record<string, string> = {
   INDIRECT_EVIDENCE_ONLY:
     "Only indirect contextual observations qualified; direct spatial flood observation is required to assess road-segment overlap.",
   OBSERVATION_STALE:
-    "Time difference between observation and claimed time exceeds the 24-hour demo policy window.",
+    "Time difference between observation and claimed time exceeds the policy temporal window.",
   OBSERVATION_TIME_UNKNOWN:
     "Evidence record has no documented observation timestamp (observed_at is null).",
   COVERAGE_UNKNOWN:
@@ -192,11 +250,25 @@ export const REASON_EXPLANATIONS: Record<string, string> = {
   OUTSIDE_COVERAGE:
     "Part or all of the claimed road segment lies outside documented observation coverage or station relevance radius.",
   NO_EVIDENCE:
-    "No evidence records are loaded in the active evidence store.",
+    "No relevant evidence records are loaded in the active evidence store.",
   AUTHENTICATION_FAILED:
-    "Evidence item failed authentication verification and was excluded from conflict determination.",
+    "Evidence item failed cryptographic authentication verification.",
   NOT_AVAILABLE_AT_DECISION_TIME:
     "Evidence was observed or became available after the specified decision_time.",
   AVAILABILITY_TIME_UNKNOWN:
     "Evidence lacks a documented availability/publication timestamp (available_at is null) for decision-time verification.",
+  OSNMA_LOCALLY_VERIFIED:
+    "Galileo I/NAV ADKD=0 navigation data passed local GSC Merkle Tree, ECDSA P-256 DSM-KROOT, TESLA SHA-256 chain, and HMAC-SHA-256 Tag0 verification.",
+  OSNMA_AUTHENTICATION_PENDING:
+    "OSNMA cryptographic verification is pending delayed TESLA key disclosure or full DSM-KROOT assembly.",
+  OSNMA_AUTHENTICATION_UNAVAILABLE:
+    "OSNMA bits were absent or unavailable in the recorded Galileo broadcast.",
+  OSNMA_EXTERNALLY_REPORTED_UNVERIFIED:
+    "External receiver reported authentication without local cryptographic re-verification; treated as unverified.",
+  OSNMA_AUTHENTICATION_UNKNOWN:
+    "Authentication status could not be locally verified.",
+  NAV_AUTH_INSUFFICIENT_FOR_POSITIONING:
+    "Galileo OSNMA authenticates broadcast satellite navigation data bits only and cannot establish user positioning accuracy or receiver trustworthiness.",
+  SVID_NOT_PRESENT:
+    "Requested Galileo satellite PRN/SVID was not among the authenticated satellites in this evidence record.",
 };

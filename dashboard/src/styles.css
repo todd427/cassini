@@ -524,6 +524,98 @@ button:disabled {
   color: #cbd5e1;
 }
 
+.domain-tabs {
+  display: inline-flex;
+  background: #0b111b;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.domain-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.domain-tab-active {
+  background: #1a2d47;
+  color: #e0f2fe;
+  box-shadow: inset 0 0 0 1px #38bdf8;
+}
+
+.crypto-panel {
+  min-height: 540px;
+}
+
+.crypto-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.crypto-banner {
+  background: #132238;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #dbeafe;
+}
+
+.crypto-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crypto-step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--panel-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 999px;
+  background: #0c4a6e;
+  border: 1px solid #38bdf8;
+  color: #e0f2fe;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.scope-warning-box {
+  background: var(--conflict-bg);
+  border: 1px solid var(--conflict-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #fde68a;
+}
+
+.scope-warning-box ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.45;
+}
+
 /* Results & Provenance */
 .results-panel {
   overflow-y: auto;

@@ -97,6 +97,54 @@ export const CLAIM_PRESETS: ClaimPreset[] = [
   },
 ];
 
+export const GALILEO_PRESETS: ClaimPreset[] = [
+  {
+    id: "galileo-e27-authenticated",
+    label: "Galileo E27 — Authenticated I/NAV Message (Genuine SBF)",
+    description:
+      "Assess whether Galileo E27 I/NAV ADKD=0 navigation data (ephemeris/clock) was cryptographically authenticated during the genuine 27 Aug 2023 Septentrio mosaic-X5 SBF recording.",
+    claim: {
+      claim_id: "galileo-nav-e27-20230827",
+      claim_type: "gnss_nav_message_authenticated",
+      geometry: null,
+      claimed_at: "2023-08-27T20:10:00Z",
+      source_label: "Synthetic claim against genuine recorded Galileo E1-B SBF",
+      synthetic: true,
+      attributes: { svid: 27 },
+    },
+  },
+  {
+    id: "galileo-positioning-unsuitable",
+    label: "Positioning Accuracy Claim — Evidence Unsuitable (Scope Boundary)",
+    description:
+      "Submit a user positioning-accuracy claim (gnss_position_accurate) against genuine OSNMA evidence to demonstrate that navigation-message authentication cannot prove position accuracy.",
+    claim: {
+      claim_id: "galileo-position-accuracy-claim",
+      claim_type: "gnss_position_accurate",
+      geometry: null,
+      claimed_at: "2023-08-27T20:10:00Z",
+      source_label: "Synthetic positioning-accuracy claim (scope boundary demo)",
+      synthetic: true,
+      attributes: {},
+    },
+  },
+  {
+    id: "galileo-stale-observation",
+    label: "Galileo E27 — Stale Claim Timestamp (>1h) (Insufficient Evidence)",
+    description:
+      "Query the genuine 20:04 UTC OSNMA recording with a 23:30 UTC claim timestamp, exceeding the 1-hour navigation-message freshness policy window.",
+    claim: {
+      claim_id: "galileo-nav-stale-20230827",
+      claim_type: "gnss_nav_message_authenticated",
+      geometry: null,
+      claimed_at: "2023-08-27T23:30:00Z",
+      source_label: "Synthetic stale-timestamp navigation claim",
+      synthetic: true,
+      attributes: { svid: 27 },
+    },
+  },
+];
+
 /** Built-in mock evidence used ONLY when the user explicitly activates Mock Mode. */
 export const MOCK_EVIDENCE_ITEMS: Evidence[] = [
   {
@@ -244,7 +292,8 @@ export function runMockAssessment(
           ? ev.coverage.coordinates[0]
           : ev.coverage.coordinates[0][0];
 
-    if (covRing && !lineIntersectsBox(claim.geometry.coordinates, bboxOfRing(covRing))) {
+    const claimCoords = claim.geometry?.coordinates ?? [];
+    if (covRing && !lineIntersectsBox(claimCoords, bboxOfRing(covRing))) {
       return {
         evidence_id: ev.id,
         status: "insufficient_evidence",
@@ -252,7 +301,7 @@ export function runMockAssessment(
         reasons: ["OUTSIDE_COVERAGE"],
       };
     }
-    if (lineIntersectsBox(claim.geometry.coordinates, bboxOfRing(floodRing))) {
+    if (lineIntersectsBox(claimCoords, bboxOfRing(floodRing))) {
       return {
         evidence_id: ev.id,
         status: "potential_conflict",
@@ -268,7 +317,7 @@ export function runMockAssessment(
         reasons: ["COVERAGE_UNKNOWN"],
       };
     }
-    if (lineInsideBox(claim.geometry.coordinates, bboxOfRing(covRing))) {
+    if (lineInsideBox(claimCoords, bboxOfRing(covRing))) {
       return {
         evidence_id: ev.id,
         status: "no_mapped_overlap",

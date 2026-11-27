@@ -46472,5 +46472,86 @@
       "Raw CSV SHA-256 confirms local byte integrity only; source cryptographic authentication is unknown (unverified)."
     ],
     "synthetic": false
+  },
+  {
+    "id": "galileo-osnma-sbf-wn1253-pkid1",
+    "source": "galileo_osnma_sbf",
+    "product_id": "OSNMA_SBF_WN1253_PKID1",
+    "source_url": "https://raw.githubusercontent.com/Algafix/OSNMA/master/tests/scenarios/new_live_config/osnma_new_config.sbf",
+    "observed_at": "2023-08-27T20:04:42Z",
+    "available_at": null,
+    "retrieved_at": "2026-11-27T16:58:00Z",
+    "kind": "gnss_osnma_auth",
+    "geometry": null,
+    "coverage": null,
+    "attributes": {
+      "verification_method": "local_osnma_cryptographic",
+      "locally_verified": true,
+      "osnma_outcome": "authenticated",
+      "authenticated_scope": "Galileo E1-B I/NAV ADKD=0 navigation data (Word Types 1-5: ephemeris, clock corrections, ionospheric/BGD, health/DVS)",
+      "does_not_authenticate": [
+        "user_position_accuracy",
+        "pseudorange_integrity",
+        "receiver_firmware_trustworthiness",
+        "protection_against_meaconing_or_relay_spoofing"
+      ],
+      "merkle_proof_verified": true,
+      "ecdsa_kroot_verified": true,
+      "merkle_root_sha256": "0e63f552c8021709043c239032effe941bf22c8389032f5f2701e0fbc80148b8",
+      "merkle_tree_uid": "MT-AA1AC9A4FFA41F00DC5BA63B0CD30129A9E1E9BCBC3FB7731B41F7EB63208BAE",
+      "public_key_uid": "PK-9202CB2A8A0AA4A40E032B454718498FB08C78D1EFE53149A4E2DE78CAA196F3",
+      "pkid": 1,
+      "pk_type": "ECDSA P-256/SHA-256",
+      "nma_status": "test",
+      "chain_id": 3,
+      "key_size_bits": 128,
+      "tag_size_bits": 40,
+      "mac_lookup_table": 33,
+      "gst_week": 1253,
+      "gst_tow_start": 72270,
+      "gst_tow_end": 74430,
+      "receiver_model": "Septentrio mosaic-X5",
+      "receiver_firmware": "4.14.x",
+      "total_complete_subframes": 269,
+      "unauthenticated_zero_nma_subframes": 75,
+      "tesla_verified_subframes": 73,
+      "tag0_verified_count": 188,
+      "tag0_failed_count": 0,
+      "tag0_checked_count": 188,
+      "authenticated_svids": [
+        7,
+        18,
+        21,
+        27
+      ],
+      "failure_reasons": [],
+      "merkle_tree_sha256": "123c8db2c157de8ca6cbf573e6589a5ec58451ece5e3864548df1d741ed664b6",
+      "public_key_sha256": "ba2e95034dd188bf9d6205f6577615b8b1f905b92f440f636f5244dc2532ec4c"
+    },
+    "provenance": {
+      "original_source": "Galileo E1-B Signal-in-Space (E07, E18, E21, E27) recorded via Septentrio mosaic-X5",
+      "publishing_organisation": "European GNSS Service Centre (GSC cryptographic material) & Algafix/OSNMA KU Leuven (recorded SBF)",
+      "upstream_datasets": [
+        "MT-AA1AC9A4FFA41F00DC5BA63B0CD30129A9E1E9BCBC3FB7731B41F7EB63208BAE",
+        "PK-9202CB2A8A0AA4A40E032B454718498FB08C78D1EFE53149A4E2DE78CAA196F3"
+      ],
+      "derived_from": [],
+      "measurement_method": "Local Galileo OSNMA SIS ICD v1.1 verification (Merkle SHA-256 + ECDSA P-256 DSM-KROOT + TESLA SHA-256 + HMAC-SHA-256 ADKD=0)",
+      "shared_dependencies": [
+        "galileo_system_time_gst"
+      ]
+    },
+    "authentication": "verified",
+    "sha256": "c68444c7395c346753cea5d280c6beafa2fff2b42fbd023b05add2e25a88cb56",
+    "raw_path": "sample_data/raw/galileo/osnma_new_config.sbf",
+    "licence": "EUPL-1.2 (recorded SBF from Algafix/OSNMA, KU Leuven) & European GNSS Service Centre (GSC) public OSNMA cryptographic material (\u00a9 European Union)",
+    "limitations": [
+      "Galileo OSNMA cryptographically authenticates broadcast I/NAV navigation message data bits (ADKD=0: ephemeris, clock, ionospheric/BGD, health/DVS) ONLY \u2014 it does NOT authenticate user position accuracy, pseudorange measurements, receiver integrity, or protect against replay/meaconing spoofing.",
+      "Recorded receiver data verification does not perform live Galileo System Time (GST) loose time synchronisation checks required for real-time TESLA security against delayed replay.",
+      "Broadcast NMA Header status is NMAS=1 ('test', Galileo OSNMA public test phase, August 2023), not operational service (NMAS=2).",
+      "75 complete subframes in the recording had NMA_Header=0x00 (OSNMA not broadcast on that satellite/subframe).",
+      "Recording publication/availability timestamp (available_at) is not embedded in the SBF file and remains unknown (null)."
+    ],
+    "synthetic": false
   }
 ]

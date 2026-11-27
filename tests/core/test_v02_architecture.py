@@ -123,11 +123,11 @@ def test_discovery_endpoints_and_unsupported_claim_type() -> None:
     pols = client.get("/v1/policies")
     assert pols.status_code == 200
     pol_list = pols.json()["policies"]
-    assert len(pol_list) == 1
-    assert pol_list[0]["policy_id"] == "flood-road"
-    assert pol_list[0]["policy_version"] == "flood-road-0.1"
-    assert pol_list[0]["thresholds"]["max_age_hours"] == 24.0
-    assert "FLOOD_EXTENT_INTERSECTS" in pol_list[0]["reason_explanations"]
+    flood_pols = [p for p in pol_list if p["policy_id"] == "flood-road"]
+    assert len(flood_pols) == 1
+    assert flood_pols[0]["policy_version"] == "flood-road-0.1"
+    assert flood_pols[0]["thresholds"]["max_age_hours"] == 24.0
+    assert "FLOOD_EXTENT_INTERSECTS" in flood_pols[0]["reason_explanations"]
 
     # Unsupported claim_type returns explicit structured HTTP 422
     bad = client.post("/v1/assess", json=_road_claim(claim_type="nonexistent_domain_claim"))
