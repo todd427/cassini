@@ -1,0 +1,28 @@
+{
+  "description": "Empty evidence dataset yields NO_EVIDENCE.",
+  "evidence": [],
+  "claim": {
+    "claim_id": "fixture-claim-no-evidence",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -7.745,
+          54.955
+        ],
+        [
+          -7.725,
+          54.955
+        ]
+      ]
+    },
+    "claimed_at": "2026-01-01T12:00:00Z",
+    "source_label": "Synthetic road report (no evidence)",
+    "synthetic": true
+  },
+  "expected_status": "insufficient_evidence",
+  "expected_reasons": [
+    "NO_EVIDENCE"
+  ]
+}

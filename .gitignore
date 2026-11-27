@@ -1,0 +1,31 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / Dashboard / TypeScript / Playwright
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
+dashboard/playwright-report/
+dashboard/test-results/
+*.tsbuildinfo
+
+# Environment / Secrets / Logs
+.env
+.env.*
+!.env.example
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*~
+*.swp

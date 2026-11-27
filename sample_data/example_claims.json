@@ -1,0 +1,106 @@
+[
+  {
+    "label": "Lough Funshinagh \u2014 Intersecting flooded road (Potential Conflict)",
+    "description": "Synthetic road passability report crossing the eastern flooded basin of Lough Funshinagh (Co. Roscommon) ~2 hours after COSMO-SkyMed SAR acquisition.",
+    "expected_status": "potential_conflict",
+    "claim": {
+      "claim_id": "emsr718-road-ballagh-east",
+      "claim_type": "road_passable",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -8.1165,
+            53.4916
+          ],
+          [
+            -8.1113,
+            53.4916
+          ],
+          [
+            -8.1075,
+            53.4916
+          ]
+        ]
+      },
+      "claimed_at": "2024-04-15T08:00:00Z",
+      "source_label": "Synthetic historical replay road report (Lough Funshinagh East)",
+      "synthetic": true
+    }
+  },
+  {
+    "label": "Lough Funshinagh \u2014 Covered road without mapped flood (No Mapped Overlap)",
+    "description": "Synthetic road report inside EMSR718 AOI02 documented coverage south-west of Lough Funshinagh with no mapped flood overlap (~2h from acquisition). Not proof of road safety.",
+    "expected_status": "no_mapped_overlap",
+    "claim": {
+      "claim_id": "emsr718-road-rahara-south",
+      "claim_type": "road_passable",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -8.175,
+            53.462
+          ],
+          [
+            -8.155,
+            53.462
+          ]
+        ]
+      },
+      "claimed_at": "2024-04-15T08:00:00Z",
+      "source_label": "Synthetic historical replay road report (Rahara South, inside AOI02)",
+      "synthetic": true
+    }
+  },
+  {
+    "label": "Lough Funshinagh \u2014 Stale observation (>24h) (Insufficient Evidence)",
+    "description": "Same flooded road segment queried 72 hours after satellite acquisition, exceeding the 24-hour demo policy window.",
+    "expected_status": "insufficient_evidence",
+    "claim": {
+      "claim_id": "emsr718-road-stale-72h",
+      "claim_type": "road_passable",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -8.1165,
+            53.4916
+          ],
+          [
+            -8.1075,
+            53.4916
+          ]
+        ]
+      },
+      "claimed_at": "2024-04-18T06:02:08Z",
+      "source_label": "Synthetic historical replay road report (72h post-acquisition)",
+      "synthetic": true
+    }
+  },
+  {
+    "label": "Athlone approach \u2014 Outside documented AOI coverage (Insufficient Evidence)",
+    "description": "Synthetic road segment east of EMSR718 AOI02 boundary; documented observation coverage excludes this road.",
+    "expected_status": "insufficient_evidence",
+    "claim": {
+      "claim_id": "emsr718-road-outside-aoi",
+      "claim_type": "road_passable",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -7.98,
+            53.43
+          ],
+          [
+            -7.95,
+            53.43
+          ]
+        ]
+      },
+      "claimed_at": "2024-04-15T08:00:00Z",
+      "source_label": "Synthetic historical replay road report (Outside AOI02 coverage)",
+      "synthetic": true
+    }
+  }
+]

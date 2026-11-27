@@ -1,0 +1,100 @@
+{
+  "description": "Synthetic road intersecting a fresh (2h) flood extent polygon.",
+  "evidence": [
+    {
+      "id": "fixture-flood-1",
+      "source": "fixture",
+      "product_id": null,
+      "source_url": null,
+      "observed_at": "2026-01-01T10:00:00Z",
+      "retrieved_at": "2026-01-02T10:00:00Z",
+      "kind": "flood_extent",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -7.74,
+              54.95
+            ],
+            [
+              -7.73,
+              54.95
+            ],
+            [
+              -7.73,
+              54.96
+            ],
+            [
+              -7.74,
+              54.96
+            ],
+            [
+              -7.74,
+              54.95
+            ]
+          ]
+        ]
+      },
+      "coverage": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -7.76,
+              54.94
+            ],
+            [
+              -7.71,
+              54.94
+            ],
+            [
+              -7.71,
+              54.97
+            ],
+            [
+              -7.76,
+              54.97
+            ],
+            [
+              -7.76,
+              54.94
+            ]
+          ]
+        ]
+      },
+      "authentication": "unknown",
+      "sha256": null,
+      "raw_path": null,
+      "licence": null,
+      "limitations": [
+        "Synthetic fixture, not an actual flood."
+      ],
+      "synthetic": true
+    }
+  ],
+  "claim": {
+    "claim_id": "fixture-claim-intersect",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -7.745,
+          54.955
+        ],
+        [
+          -7.725,
+          54.955
+        ]
+      ]
+    },
+    "claimed_at": "2026-01-01T12:00:00Z",
+    "source_label": "Synthetic road report (intersecting flood)",
+    "synthetic": true
+  },
+  "expected_status": "potential_conflict",
+  "expected_reasons": [
+    "FLOOD_EXTENT_INTERSECTS"
+  ]
+}

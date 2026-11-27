@@ -1,0 +1,74 @@
+{
+  "description": "Non-overlapping road where coverage polygon is undocumented (null).",
+  "evidence": [
+    {
+      "id": "fixture-flood-unknown-cov",
+      "source": "fixture",
+      "product_id": null,
+      "source_url": null,
+      "observed_at": "2026-01-01T10:00:00Z",
+      "retrieved_at": "2026-01-02T10:00:00Z",
+      "kind": "flood_extent",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -7.74,
+              54.95
+            ],
+            [
+              -7.73,
+              54.95
+            ],
+            [
+              -7.73,
+              54.96
+            ],
+            [
+              -7.74,
+              54.96
+            ],
+            [
+              -7.74,
+              54.95
+            ]
+          ]
+        ]
+      },
+      "coverage": null,
+      "authentication": "unknown",
+      "sha256": null,
+      "raw_path": null,
+      "licence": null,
+      "limitations": [
+        "Synthetic fixture, not an actual flood."
+      ],
+      "synthetic": true
+    }
+  ],
+  "claim": {
+    "claim_id": "fixture-claim-unknown-cov",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -7.75,
+          54.945
+        ],
+        [
+          -7.72,
+          54.945
+        ]
+      ]
+    },
+    "claimed_at": "2026-01-01T12:00:00Z",
+    "source_label": "Synthetic road report (unknown coverage)",
+    "synthetic": true
+  },
+  "expected_status": "insufficient_evidence",
+  "expected_reasons": [
+    "COVERAGE_UNKNOWN"
+  ]
+}
