@@ -1,0 +1,42 @@
+{
+  "description": "Three genuinely independent observations (Copernicus COSMO-SkyMed SAR direct flood extent, GSI_11 in-situ Lough Funshinagh water level 69.37 mAOD, Met \u00c9ireann Mount Dillon rainfall) assessed against a synthetic flooded road passability claim.",
+  "uses_genuine_evidence": true,
+  "claim": {
+    "claim_id": "emsr718-road-ballagh-east",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -8.1165,
+          53.4916
+        ],
+        [
+          -8.1113,
+          53.4916
+        ],
+        [
+          -8.1075,
+          53.4916
+        ]
+      ]
+    },
+    "claimed_at": "2024-04-15T08:00:00Z",
+    "source_label": "Synthetic historical replay road report (Lough Funshinagh East)",
+    "synthetic": true
+  },
+  "expected_status": "potential_conflict",
+  "expected_independence_status": "distinct_declared_sources",
+  "expected_independent_groups": 3,
+  "evidence_refs": [
+    {
+      "ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+    },
+    {
+      "ref_id": "gsi-gwlevel-gsi-11-20240415t0600z"
+    },
+    {
+      "ref_id": "met-eireann-1975-20240415"
+    }
+  ]
+}

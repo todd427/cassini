@@ -1,0 +1,78 @@
+{
+  "description": "Two flood products published by different organisations from the same upstream COSMO-SkyMed observation collapse into 1 correlated group (not independent corroboration).",
+  "uses_genuine_evidence": true,
+  "claim": {
+    "claim_id": "emsr718-road-ballagh-east",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -8.1165,
+          53.4916
+        ],
+        [
+          -8.1113,
+          53.4916
+        ],
+        [
+          -8.1075,
+          53.4916
+        ]
+      ]
+    },
+    "claimed_at": "2024-04-15T08:00:00Z",
+    "source_label": "Synthetic historical replay road report (Lough Funshinagh East)",
+    "synthetic": true
+  },
+  "expected_status": "potential_conflict",
+  "expected_independence_status": "shared_dependencies_detected",
+  "expected_independent_groups": 1,
+  "evidence_refs": [
+    {
+      "ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+    },
+    {
+      "inline": {
+        "id": "synthetic-partner-derived-emsr718",
+        "source": "synthetic_downstream_analytics",
+        "product_id": "PARTNER_REPROCESS_EMSR718_V1",
+        "source_url": null,
+        "observed_at": "2024-04-15T06:02:08Z",
+        "available_at": null,
+        "retrieved_at": "2026-11-27T16:00:00Z",
+        "kind": "flood_extent",
+        "attributes": {
+          "locality": "Lough Funshinagh",
+          "sensor_name": "COSMO-SkyMed",
+          "sensor_resolution": "3.0 m",
+          "feature_count": 103
+        },
+        "provenance": {
+          "original_source": "COSMO-SkyMed",
+          "publishing_organisation": "Synthetic Downstream Analytics Vendor",
+          "upstream_datasets": [
+            "EMSR718_AOI02_DEL_MONIT01_v2"
+          ],
+          "derived_from": [
+            "cems-emsr718-aoi02-del-monit01-v2"
+          ],
+          "measurement_method": "Re-vectorised mask derived from CEMS EMSR718",
+          "shared_dependencies": [
+            "copernicus_ems_rapid_mapping_pipeline"
+          ]
+        },
+        "authentication": "unknown",
+        "sha256": null,
+        "raw_path": null,
+        "licence": "Synthetic test derivative (not a real product)",
+        "limitations": [
+          "Synthetic derivative sharing upstream COSMO-SkyMed observation with EMSR718; must NOT count as independent corroboration."
+        ],
+        "synthetic": true,
+        "geometry_ref_id": "cems-emsr718-aoi02-del-monit01-v2",
+        "coverage_ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+      }
+    }
+  ]
+}

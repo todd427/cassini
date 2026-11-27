@@ -30,11 +30,14 @@ def test_real_copernicus_evidence_provenance_and_checksum() -> None:
     items = load_evidence_file(EVIDENCE_PATH)
     assert len(items) >= 1
 
-    real_items = [ev for ev in items if not ev.synthetic]
-    assert len(real_items) >= 1, "Expected at least one genuine non-synthetic Copernicus dataset."
+    copernicus_items = [
+        ev
+        for ev in items
+        if not ev.synthetic and ev.source == "copernicus_ems_rapid_mapping"
+    ]
+    assert len(copernicus_items) >= 1, "Expected at least one genuine Copernicus dataset."
 
-    for ev in real_items:
-        assert ev.source == "copernicus_ems_rapid_mapping"
+    for ev in copernicus_items:
         assert ev.product_id is not None and "EMSR" in ev.product_id
         assert ev.source_url is not None and ev.source_url.startswith("https://")
         assert ev.observed_at is not None
@@ -48,6 +51,7 @@ def test_real_copernicus_evidence_provenance_and_checksum() -> None:
         assert raw_file.exists(), f"Raw artifact missing at {raw_file}"
         assert _sha256(raw_file) == ev.sha256, "SHA-256 mismatch against raw artifact!"
 
+        assert ev.geometry is not None
         flood_geom = shape(ev.geometry.model_dump())
         assert flood_geom.is_valid and not flood_geom.is_empty
         minx, miny, maxx, maxy = flood_geom.bounds
@@ -59,6 +63,44 @@ def test_real_copernicus_evidence_provenance_and_checksum() -> None:
         cov_geom = shape(ev.coverage.model_dump())
         assert cov_geom.is_valid and not cov_geom.is_empty
         assert cov_geom.intersects(flood_geom)
+
+
+def test_real_independent_gsi_and_met_eireann_provenance_and_checksums() -> None:
+    items = load_evidence_file(EVIDENCE_PATH)
+    by_source = {ev.source: ev for ev in items if not ev.synthetic}
+
+    assert "gsi_gwlevel" in by_source, "Expected genuine GSI gwlevel.ie evidence in evidence.json"
+    gsi = by_source["gsi_gwlevel"]
+    assert gsi.kind == "hydrometric_water_level"
+    assert gsi.observed_at is not None
+    assert gsi.available_at is None
+    assert gsi.retrieved_at is not None
+    assert gsi.licence is not None and "CC BY 4.0" in gsi.licence
+    assert gsi.authentication == "unknown"
+    assert gsi.raw_path is not None and gsi.sha256 is not None
+    assert _sha256((REPO_ROOT / gsi.raw_path).resolve()) == gsi.sha256
+    assert gsi.geometry is not None and gsi.geometry.type == "Point"
+    assert -8.2 <= gsi.geometry.coordinates[0] <= -8.0
+    assert 53.4 <= gsi.geometry.coordinates[1] <= 53.6
+    assert gsi.attributes["stage_maod"] == 69.37
+    assert gsi.attributes["above_historical_p99"] is True
+    assert gsi.provenance is not None
+    assert gsi.provenance.publishing_organisation == "Geological Survey Ireland"
+
+    assert "met_eireann_daily" in by_source, "Expected genuine Met Éireann evidence in evidence.json"
+    met = by_source["met_eireann_daily"]
+    assert met.kind == "meteorological_rainfall"
+    assert met.observed_at is not None
+    assert met.available_at is None
+    assert met.retrieved_at is not None
+    assert met.licence is not None and "CC BY 4.0" in met.licence
+    assert met.authentication == "unknown"
+    assert met.raw_path is not None and met.sha256 is not None
+    assert _sha256((REPO_ROOT / met.raw_path).resolve()) == met.sha256
+    assert met.geometry is not None and met.geometry.type == "Point"
+    assert met.attributes["rain_mm"] == 6.1
+    assert met.provenance is not None
+    assert met.provenance.publishing_organisation == "Met Éireann"
 
 
 def test_all_synthetic_fixtures_valid_and_deterministic() -> None:

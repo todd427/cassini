@@ -1,0 +1,98 @@
+{
+  "description": "Explicitly synthetic disagreement fixture: genuine EMSR718 direct flood extent overlaps the road while a synthetic independent direct aerial survey covering the road shows no mapped overlap. potential_conflict takes precedence and both findings remain visible.",
+  "uses_genuine_evidence": true,
+  "claim": {
+    "claim_id": "emsr718-road-ballagh-east",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -8.1165,
+          53.4916
+        ],
+        [
+          -8.1113,
+          53.4916
+        ],
+        [
+          -8.1075,
+          53.4916
+        ]
+      ]
+    },
+    "claimed_at": "2024-04-15T08:00:00Z",
+    "source_label": "Synthetic historical replay road report (Lough Funshinagh East)",
+    "synthetic": true
+  },
+  "expected_status": "potential_conflict",
+  "expected_independence_status": "distinct_declared_sources",
+  "expected_independent_groups": 2,
+  "evidence_refs": [
+    {
+      "ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+    },
+    {
+      "inline": {
+        "id": "synthetic-independent-clear-direct",
+        "source": "synthetic_aerial_survey",
+        "product_id": "SYNTH_AERIAL_20240415",
+        "source_url": null,
+        "observed_at": "2024-04-15T07:30:00Z",
+        "available_at": "2024-04-15T07:45:00Z",
+        "retrieved_at": "2026-11-27T16:44:00Z",
+        "kind": "flood_extent",
+        "attributes": {
+          "evidence_role": "direct"
+        },
+        "provenance": {
+          "original_source": "Synthetic Aerial Ortho Camera",
+          "publishing_organisation": "Synthetic Independent Survey",
+          "upstream_datasets": [
+            "SYNTH_AERIAL_FLIGHT_20240415"
+          ],
+          "derived_from": [],
+          "measurement_method": "Synthetic aerial photogrammetry",
+          "shared_dependencies": []
+        },
+        "authentication": "unknown",
+        "sha256": null,
+        "raw_path": null,
+        "licence": "Synthetic test fixture",
+        "limitations": [
+          "Synthetic direct flood-extent fixture for disagreement testing."
+        ],
+        "synthetic": true,
+        "geometry_ref_id": null,
+        "coverage_ref_id": "cems-emsr718-aoi02-del-monit01-v2",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -8.16,
+                53.51
+              ],
+              [
+                -8.155,
+                53.51
+              ],
+              [
+                -8.155,
+                53.514
+              ],
+              [
+                -8.16,
+                53.514
+              ],
+              [
+                -8.16,
+                53.51
+              ]
+            ]
+          ]
+        }
+      }
+    }
+  ]
+}

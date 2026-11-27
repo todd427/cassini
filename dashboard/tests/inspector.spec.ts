@@ -103,4 +103,30 @@ test.describe("Evidence Inspector E2E", () => {
     await page.getByTestId("assess-button").click();
     await expect(page.getByTestId("assessment-status")).toHaveText("Potential conflict");
   });
+
+  test("displays multiple genuine independent sources, independence grouping, and availability timestamps", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const provenanceCards = page.getByTestId("provenance-card");
+    await expect(provenanceCards).toHaveCount(3);
+    await expect(provenanceCards.nth(0)).toContainText("EMSR718_AOI02_DEL_MONIT01_v2");
+    await expect(provenanceCards.nth(1)).toContainText("GSI_11_Lough_Funshinagh");
+    await expect(provenanceCards.nth(1)).toContainText("69.37 mAOD");
+    await expect(provenanceCards.nth(2)).toContainText("MET_EIREANN_DLY_1975_MT_DILLON");
+
+    await page.getByTestId("assess-button").click();
+    await expect(page.getByTestId("assessment-status")).toHaveText("Potential conflict");
+
+    // Verify independence grouping summary and per-source findings across all 3 genuine sources
+    await expect(page.getByTestId("independence-summary")).toContainText(
+      "Distinct declared sources",
+    );
+    await expect(page.getByTestId("independence-summary")).toContainText(
+      "3 independent group(s) / 3 source(s)",
+    );
+    await expect(page.getByTestId("findings-list")).toContainText("contextual_support");
+    await expect(page.getByTestId("findings-list")).toContainText("Unknown (null)");
+  });
 });

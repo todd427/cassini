@@ -57,6 +57,10 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
     },
+    stations: {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    },
     claim: {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
@@ -140,6 +144,17 @@ function buildOfflineStyle(enableOsmTiles: boolean): StyleSpecification {
       paint: {
         "line-color": "#38bdf8",
         "line-width": 1.6,
+      },
+    },
+    {
+      id: "station-points",
+      type: "circle",
+      source: "stations",
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#c084fc",
+        "circle-stroke-color": "#0b111b",
+        "circle-stroke-width": 2,
       },
     },
     {
@@ -229,11 +244,35 @@ export function EvidenceMap({
   const floodGeoJson = useMemo<GeoJSON.FeatureCollection>(
     () => ({
       type: "FeatureCollection",
-      features: evidenceItems.map((ev) => ({
-        type: "Feature",
-        properties: { id: ev.id, product_id: ev.product_id ?? ev.id },
-        geometry: ev.geometry,
-      })),
+      features: evidenceItems
+        .filter(
+          (ev) =>
+            ev.geometry !== null &&
+            (ev.geometry.type === "Polygon" || ev.geometry.type === "MultiPolygon"),
+        )
+        .map((ev) => ({
+          type: "Feature",
+          properties: { id: ev.id, product_id: ev.product_id ?? ev.id },
+          geometry: ev.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
+        })),
+    }),
+    [evidenceItems],
+  );
+
+  const stationsGeoJson = useMemo<GeoJSON.FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features: evidenceItems
+        .filter((ev) => ev.geometry !== null && ev.geometry.type === "Point")
+        .map((ev) => ({
+          type: "Feature",
+          properties: {
+            id: ev.id,
+            kind: ev.kind,
+            label: ev.product_id ?? ev.id,
+          },
+          geometry: ev.geometry as GeoJSON.Point,
+        })),
     }),
     [evidenceItems],
   );
@@ -341,11 +380,13 @@ export function EvidenceMap({
     if (!map || !mapReady) return;
 
     const floodSrc = map.getSource("flood") as GeoJSONSource | undefined;
+    const stationsSrc = map.getSource("stations") as GeoJSONSource | undefined;
     const covSrc = map.getSource("coverage") as GeoJSONSource | undefined;
     const claimSrc = map.getSource("claim") as GeoJSONSource | undefined;
     const epSrc = map.getSource("claim-endpoints") as GeoJSONSource | undefined;
 
     floodSrc?.setData(floodGeoJson);
+    stationsSrc?.setData(stationsGeoJson);
     covSrc?.setData(coverageGeoJson);
     claimSrc?.setData(claimGeoJson);
     epSrc?.setData(endpointGeoJson);
@@ -358,6 +399,7 @@ export function EvidenceMap({
   }, [
     mapReady,
     floodGeoJson,
+    stationsGeoJson,
     coverageGeoJson,
     claimGeoJson,
     endpointGeoJson,
@@ -366,14 +408,19 @@ export function EvidenceMap({
     showCoverage,
   ]);
 
-  // Auto-fit bounds when active claim or evidence changes
+  // Auto-fit bounds to direct flood polygons + active claim (keeps Lough Funshinagh well-framed)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const geoms: Array<{ coordinates: unknown }> = [];
     if (claimGeometry) geoms.push(claimGeometry);
     for (const ev of evidenceItems) {
-      geoms.push(ev.geometry);
+      if (
+        ev.geometry &&
+        (ev.geometry.type === "Polygon" || ev.geometry.type === "MultiPolygon")
+      ) {
+        geoms.push(ev.geometry);
+      }
     }
     const bounds = computeBounds(geoms);
     if (bounds) {
@@ -394,7 +441,7 @@ export function EvidenceMap({
     const geoms: Array<{ coordinates: unknown }> = [];
     for (const ev of evidenceItems) {
       if (ev.coverage) geoms.push(ev.coverage);
-      geoms.push(ev.geometry);
+      if (ev.geometry) geoms.push(ev.geometry);
     }
     if (claimGeometry) geoms.push(claimGeometry);
     const bounds = computeBounds(geoms);
@@ -487,6 +534,9 @@ export function EvidenceMap({
             <span className="swatch swatch-coverage" /> Documented AOI coverage
           </span>
           <span className="legend-item">
+            <span className="swatch swatch-station" /> Hydrometric / Met station
+          </span>
+          <span className="legend-item">
             <span
               className="swatch swatch-claim"
               style={{ backgroundColor: claimColor }}
@@ -495,7 +545,7 @@ export function EvidenceMap({
           </span>
         </div>
         <div className="map-attribution">
-          Offline WGS84 grid | Evidence: © European Union, Copernicus EMS Rapid Mapping
+          Offline WGS84 grid | © EU Copernicus EMS · Geological Survey Ireland (CC BY 4.0) · Met Éireann (CC BY 4.0)
         </div>
       </div>
     </section>

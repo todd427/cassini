@@ -1,0 +1,38 @@
+{
+  "description": "Genuine multi-source tension: Copernicus EMSR718 shows no mapped overlap on a covered clear road (Rahara South) while independent genuine GSI_11 reports near-record lake level (69.37 mAOD) nearby. Demonstrates that no_mapped_overlap is not proof of road safety.",
+  "uses_genuine_evidence": true,
+  "claim": {
+    "claim_id": "emsr718-road-rahara-south",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -8.175,
+          53.462
+        ],
+        [
+          -8.155,
+          53.462
+        ]
+      ]
+    },
+    "claimed_at": "2024-04-15T08:00:00Z",
+    "source_label": "Synthetic historical replay road report (Rahara South, inside AOI02)",
+    "synthetic": true
+  },
+  "expected_status": "no_mapped_overlap",
+  "expected_independence_status": "distinct_declared_sources",
+  "expected_independent_groups": 3,
+  "evidence_refs": [
+    {
+      "ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+    },
+    {
+      "ref_id": "gsi-gwlevel-gsi-11-20240415t0600z"
+    },
+    {
+      "ref_id": "met-eireann-1975-20240415"
+    }
+  ]
+}

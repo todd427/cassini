@@ -1,0 +1,76 @@
+{
+  "description": "Decision-time assessment at 2024-04-15T08:00:00Z: genuine evidence with unknown available_at yields AVAILABILITY_TIME_UNKNOWN, while synthetic delayed publication (available 2024-04-16T10:00Z) yields NOT_AVAILABLE_AT_DECISION_TIME.",
+  "uses_genuine_evidence": true,
+  "claim": {
+    "claim_id": "emsr718-decision-time-20240415t0800z",
+    "claim_type": "road_passable",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          -8.1165,
+          53.4916
+        ],
+        [
+          -8.1113,
+          53.4916
+        ],
+        [
+          -8.1075,
+          53.4916
+        ]
+      ]
+    },
+    "claimed_at": "2024-04-15T08:00:00Z",
+    "source_label": "Synthetic historical replay road report (Lough Funshinagh East)",
+    "synthetic": true,
+    "assessment_mode": "decision_time",
+    "decision_time": "2024-04-15T08:00:00Z"
+  },
+  "expected_status": "insufficient_evidence",
+  "expected_independence_status": "distinct_declared_sources",
+  "expected_independent_groups": 2,
+  "evidence_refs": [
+    {
+      "ref_id": "gsi-gwlevel-gsi-11-20240415t0600z"
+    },
+    {
+      "inline": {
+        "id": "synthetic-delayed-publication-cems",
+        "source": "copernicus_ems_rapid_mapping",
+        "product_id": "EMSR718_AOI02_DEL_MONIT01_v2",
+        "source_url": "https://rapidmapping.emergency.copernicus.eu/backend/EMSR718/AOI02/DEL_MONIT01/EMSR718_AOI02_DEL_MONIT01_v2.zip",
+        "observed_at": "2024-04-15T06:02:08Z",
+        "available_at": "2024-04-16T10:00:00Z",
+        "retrieved_at": "2026-11-27T16:00:00Z",
+        "kind": "flood_extent",
+        "attributes": {
+          "locality": "Lough Funshinagh",
+          "sensor_name": "COSMO-SkyMed",
+          "sensor_resolution": "3.0 m",
+          "feature_count": 103
+        },
+        "provenance": {
+          "original_source": "COSMO-SkyMed",
+          "publishing_organisation": "Copernicus EMS Rapid Mapping",
+          "upstream_datasets": [
+            "EMSR718_AOI02_DEL_MONIT01_v2"
+          ],
+          "derived_from": [],
+          "measurement_method": "SAR semi-automatic flood extraction",
+          "shared_dependencies": []
+        },
+        "authentication": "unknown",
+        "sha256": null,
+        "raw_path": null,
+        "licence": "Copernicus EMS Rapid Mapping (\u00a9 European Union, 2024); https://emergency.copernicus.eu/mapping/ems/cite-copernicus-ems-mapping-portal",
+        "limitations": [
+          "Synthetic timestamped variant modelling publication on 2024-04-16T10:00:00Z (after 2024-04-15T08:00:00Z decision)."
+        ],
+        "synthetic": true,
+        "geometry_ref_id": "cems-emsr718-aoi02-del-monit01-v2",
+        "coverage_ref_id": "cems-emsr718-aoi02-del-monit01-v2"
+      }
+    }
+  ]
+}

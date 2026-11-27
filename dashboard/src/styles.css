@@ -493,6 +493,37 @@ button:disabled {
   border-radius: 99px;
 }
 
+.swatch-station {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #c084fc;
+  border: 1px solid #0b111b;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.group-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #0e1623;
+  border: 1px solid var(--border);
+  color: #cbd5e1;
+}
+
 /* Results & Provenance */
 .results-panel {
   overflow-y: auto;

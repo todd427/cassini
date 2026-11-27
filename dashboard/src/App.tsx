@@ -13,6 +13,7 @@ import {
   runMockAssessment,
 } from "./data/presets";
 import {
+  INDEPENDENCE_LABELS,
   REASON_EXPLANATIONS,
   STATUS_META,
   type AssessmentResponse,
@@ -479,30 +480,78 @@ export function App() {
                   {assessment.reasons.map((code) => (
                     <li key={code} className="reason-item">
                       <code>{code}</code>
-                      <span>{REASON_EXPLANATIONS[code]}</span>
+                      <span>{REASON_EXPLANATIONS[code] ?? code}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
+              {assessment.independence && (
+                <div className="section-block" data-testid="independence-summary">
+                  <h3>Source Independence</h3>
+                  <div className="finding-card">
+                    <div className="finding-header">
+                      <strong>{INDEPENDENCE_LABELS[assessment.independence.status]}</strong>
+                      <span className="mini-badge">
+                        {assessment.independence.independent_group_count !== null
+                          ? `${assessment.independence.independent_group_count} independent group(s) / ${assessment.independence.assessed_source_count} source(s)`
+                          : `Unknown groups (${assessment.independence.assessed_source_count} sources)`}
+                      </span>
+                    </div>
+                    {assessment.independence.correlated_groups.length > 0 && (
+                      <div className="group-chips">
+                        {assessment.independence.correlated_groups.map((grp, idx) => (
+                          <span key={idx} className="group-chip">
+                            Group {idx + 1}: {grp.join(" + ")}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {assessment.independence.shared_dependencies.length > 0 && (
+                      <p className="field-warning">
+                        Shared upstream links: {assessment.independence.shared_dependencies.join(", ")}
+                      </p>
+                    )}
+                    {assessment.independence.notes.map((note, idx) => (
+                      <p key={idx} className="muted-note">
+                        {note}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="section-block">
-                <h3>Per-Source Findings</h3>
+                <h3>Per-Source Findings ({assessment.findings.length})</h3>
                 {assessment.findings.length === 0 ? (
                   <p className="muted-note">No evidence records were evaluated.</p>
                 ) : (
-                  <div className="findings-list">
+                  <div className="findings-list" data-testid="findings-list">
                     {assessment.findings.map((finding) => {
                       const ev = evidenceById.get(finding.evidence_id);
+                      const isIndirect =
+                        ev?.attributes?.evidence_role === "indirect_contextual" ||
+                        ev?.kind === "hydrometric_water_level" ||
+                        ev?.kind === "meteorological_rainfall";
                       return (
                         <article key={finding.evidence_id} className="finding-card">
                           <div className="finding-header">
                             <strong>{ev?.product_id ?? finding.evidence_id}</strong>
-                            <span className="mini-badge">{finding.status}</span>
+                            <div className="badge-row">
+                              <span className="mini-badge">
+                                {isIndirect ? "Indirect contextual" : "Direct"}
+                              </span>
+                              <span className="mini-badge">{finding.status}</span>
+                            </div>
                           </div>
                           <dl className="meta-grid">
                             <div>
                               <dt>Observation (UTC)</dt>
                               <dd>{ev?.observed_at ?? "Unknown (null)"}</dd>
+                            </div>
+                            <div>
+                              <dt>Available (UTC)</dt>
+                              <dd>{ev?.available_at ?? "Unknown (null)"}</dd>
                             </div>
                             <div>
                               <dt>Claim (UTC)</dt>
@@ -517,6 +566,12 @@ export function App() {
                                       claimedAt,
                                     )})`
                                   : "Unknown"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Reasons</dt>
+                              <dd>
+                                <code>{finding.reasons.join(", ")}</code>
                               </dd>
                             </div>
                             <div>
@@ -556,66 +611,113 @@ export function App() {
                 No evidence records loaded.
               </p>
             ) : (
-              evidenceItems.map((ev) => (
-                <article key={ev.id} className="provenance-card" data-testid="provenance-card">
-                  <div className="finding-header">
-                    <strong>{ev.product_id ?? ev.id}</strong>
-                    <span className={`mini-badge ${ev.synthetic ? "mini-synth" : "mini-real"}`}>
-                      {ev.synthetic ? "Synthetic fixture" : "Genuine Copernicus"}
-                    </span>
-                  </div>
-                  <dl className="meta-grid">
-                    <div>
-                      <dt>Source</dt>
-                      <dd>{ev.source}</dd>
+              evidenceItems.map((ev) => {
+                const isIndirect =
+                  ev.attributes?.evidence_role === "indirect_contextual" ||
+                  ev.kind === "hydrometric_water_level" ||
+                  ev.kind === "meteorological_rainfall";
+                return (
+                  <article key={ev.id} className="provenance-card" data-testid="provenance-card">
+                    <div className="finding-header">
+                      <strong>{ev.product_id ?? ev.id}</strong>
+                      <div className="badge-row">
+                        <span className="mini-badge">
+                          {isIndirect ? "Indirect contextual" : "Direct"}
+                        </span>
+                        <span className={`mini-badge ${ev.synthetic ? "mini-synth" : "mini-real"}`}>
+                          {ev.synthetic ? "Synthetic fixture" : "Genuine evidence"}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <dt>Observed (UTC)</dt>
-                      <dd>{ev.observed_at ?? "Unknown"}</dd>
-                    </div>
-                    <div>
-                      <dt>Retrieved (UTC)</dt>
-                      <dd>{ev.retrieved_at ?? "Unknown"}</dd>
-                    </div>
-                    <div>
-                      <dt>Documented Coverage</dt>
-                      <dd>{ev.coverage ? "Present (AOI / Footprint)" : "None (null)"}</dd>
-                    </div>
-                    {ev.raw_path && (
-                      <div className="span-2">
-                        <dt>Local Raw Artifact</dt>
+                    <dl className="meta-grid">
+                      <div>
+                        <dt>Source / Kind</dt>
                         <dd>
-                          <code>{ev.raw_path}</code>
+                          {ev.source} · <code>{ev.kind}</code>
                         </dd>
                       </div>
-                    )}
-                    {ev.sha256 && (
-                      <div className="span-2">
-                        <dt>Raw Artifact SHA-256 (local integrity only)</dt>
-                        <dd>
-                          <code className="hash-code">{ev.sha256}</code>
-                        </dd>
+                      <div>
+                        <dt>Publisher</dt>
+                        <dd>{ev.provenance?.publishing_organisation ?? "Undeclared"}</dd>
                       </div>
-                    )}
-                    {ev.source_url && (
-                      <div className="span-2">
-                        <dt>Provider URL</dt>
-                        <dd>
-                          <a href={ev.source_url} target="_blank" rel="noreferrer">
-                            {ev.source_url}
-                          </a>
-                        </dd>
+                      <div>
+                        <dt>Observed (UTC)</dt>
+                        <dd>{ev.observed_at ?? "Unknown (null)"}</dd>
                       </div>
-                    )}
-                    {ev.licence && (
-                      <div className="span-2">
-                        <dt>Licence / Attribution</dt>
-                        <dd>{ev.licence}</dd>
+                      <div>
+                        <dt>Available (UTC)</dt>
+                        <dd>{ev.available_at ?? "Unknown (null)"}</dd>
                       </div>
-                    )}
-                  </dl>
-                </article>
-              ))
+                      <div>
+                        <dt>Retrieved (UTC)</dt>
+                        <dd>{ev.retrieved_at ?? "Unknown"}</dd>
+                      </div>
+                      <div>
+                        <dt>Documented Coverage</dt>
+                        <dd>{ev.coverage ? "Present (AOI / Footprint)" : "Point / None (null)"}</dd>
+                      </div>
+                      {ev.provenance?.original_source && (
+                        <div className="span-2">
+                          <dt>Original Observation Source</dt>
+                          <dd>{ev.provenance.original_source}</dd>
+                        </div>
+                      )}
+                      {typeof ev.attributes?.stage_maod === "number" && (
+                        <div className="span-2">
+                          <dt>Hydrometric Reading</dt>
+                          <dd>
+                            {ev.attributes.stage_maod} mAOD (median{" "}
+                            {String(ev.attributes.historical_median_maod ?? "?")}, p99{" "}
+                            {String(ev.attributes.historical_p99_maod ?? "?")}, max{" "}
+                            {String(ev.attributes.historical_max_maod ?? "?")})
+                          </dd>
+                        </div>
+                      )}
+                      {typeof ev.attributes?.rain_mm === "number" && (
+                        <div className="span-2">
+                          <dt>Meteorological Reading</dt>
+                          <dd>
+                            {ev.attributes.rain_mm} mm/day (5-day cumulative:{" "}
+                            {String(ev.attributes.cumulative_5day_rain_mm ?? "?")} mm)
+                          </dd>
+                        </div>
+                      )}
+                      {ev.raw_path && (
+                        <div className="span-2">
+                          <dt>Local Raw Artifact</dt>
+                          <dd>
+                            <code>{ev.raw_path}</code>
+                          </dd>
+                        </div>
+                      )}
+                      {ev.sha256 && (
+                        <div className="span-2">
+                          <dt>Raw Artifact SHA-256 (local integrity only)</dt>
+                          <dd>
+                            <code className="hash-code">{ev.sha256}</code>
+                          </dd>
+                        </div>
+                      )}
+                      {ev.source_url && (
+                        <div className="span-2">
+                          <dt>Provider URL</dt>
+                          <dd>
+                            <a href={ev.source_url} target="_blank" rel="noreferrer">
+                              {ev.source_url}
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                      {ev.licence && (
+                        <div className="span-2">
+                          <dt>Licence / Attribution</dt>
+                          <dd>{ev.licence}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>

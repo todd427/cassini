@@ -46367,5 +46367,110 @@
       "Raw archive SHA-256 confirms local file integrity only; source cryptographic authentication is unverified (unknown)."
     ],
     "synthetic": false
+  },
+  {
+    "id": "gsi-gwlevel-gsi-11-20240415t0600z",
+    "source": "gsi_gwlevel",
+    "product_id": "GSI_11_Lough_Funshinagh",
+    "source_url": "https://gwlevel.ie/api/download?locNum=00011&clusNum=001&dataType=tl&dataSrc=gs&name=Lough+Funshinagh",
+    "observed_at": "2024-04-15T06:00:00Z",
+    "available_at": null,
+    "retrieved_at": "2026-11-27T16:44:00Z",
+    "kind": "hydrometric_water_level",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        -8.08494347,
+        53.49813653
+      ]
+    },
+    "coverage": null,
+    "attributes": {
+      "evidence_role": "indirect_contextual",
+      "station_code": "GSI_11",
+      "station_name": "Lough Funshinagh",
+      "stage_maod": 69.37,
+      "datum": "Malin Head (mAOD)",
+      "logger_elevation_maod": 63.5,
+      "historical_reading_count": 89451,
+      "historical_min_maod": 65.3,
+      "historical_median_maod": 67.22,
+      "historical_p95_maod": 68.91,
+      "historical_p99_maod": 69.29,
+      "historical_max_maod": 69.38,
+      "above_historical_p95": true,
+      "above_historical_p99": true,
+      "datasheet_url": "https://gsi.geodata.gov.ie/downloads/Groundwater/Reports/Turloughs/DataSheet_26171_Lough_Funshinagh_012FUNSGH.pdf"
+    },
+    "provenance": {
+      "original_source": "GSI_11 Submerged Pressure Transducer (Lough Funshinagh)",
+      "publishing_organisation": "Geological Survey Ireland",
+      "upstream_datasets": [
+        "GSI_11_Lough_Funshinagh_hourly_stage"
+      ],
+      "derived_from": [],
+      "measurement_method": "In-situ submerged pressure transducer (hourly stage in mAOD Malin Head)",
+      "shared_dependencies": []
+    },
+    "authentication": "unknown",
+    "sha256": "89a136da9802d7ee055431d6e4e63d0298715785de11e2ddbf4e365419cfa3d3",
+    "raw_path": "sample_data/raw/GSI_11_Lough_Funshinagh.csv",
+    "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0) \u2014 Geological Survey Ireland, Government of Ireland (https://gwlevel.ie/)",
+    "limitations": [
+      "Point water-level gauge directly measures Lough Funshinagh stage (mAOD), which is indirect contextual evidence for road passability and cannot establish whether a specific road segment was inundated.",
+      "GSI gwlevel.ie data are published as provisional and unchecked; instrument drift, debris/silt, or telemetry delays may occur.",
+      "Data are recorded hourly in UTC and uploaded online once daily; exact publication timestamp (available_at) for this historical reading is unknown (null).",
+      "Raw CSV SHA-256 confirms local byte integrity only; source cryptographic authentication is unknown (unverified)."
+    ],
+    "synthetic": false
+  },
+  {
+    "id": "met-eireann-1975-20240415",
+    "source": "met_eireann_daily",
+    "product_id": "MET_EIREANN_DLY_1975_MT_DILLON",
+    "source_url": "https://clidata.met.ie/cli/climate_data/webdata/dly1975.csv",
+    "observed_at": "2024-04-15T00:00:00Z",
+    "available_at": null,
+    "retrieved_at": "2026-11-27T16:44:00Z",
+    "kind": "meteorological_rainfall",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        -7.981,
+        53.727
+      ]
+    },
+    "coverage": null,
+    "attributes": {
+      "evidence_role": "indirect_contextual",
+      "station_code": "1975",
+      "station_name": "MT DILLON",
+      "station_height_m": 39.0,
+      "rain_mm": 6.1,
+      "cumulative_5day_rain_mm": 26.7,
+      "cumulative_15day_rain_mm": 74.2,
+      "observation_window_utc": "2024-04-15T00:00:00Z/24h"
+    },
+    "provenance": {
+      "original_source": "Met \u00c9ireann Synoptic Station 1975 (MT DILLON)",
+      "publishing_organisation": "Met \u00c9ireann",
+      "upstream_datasets": [
+        "met_eireann_dly1975"
+      ],
+      "derived_from": [],
+      "measurement_method": "Automated synoptic rain gauge (daily 00\u201324 UTC precipitation in mm)",
+      "shared_dependencies": []
+    },
+    "authentication": "unknown",
+    "sha256": "8318023567c25839d291cc5291060f340b453cb612236f64fc6324edb1591744",
+    "raw_path": "sample_data/raw/MetEireann_MtDillon_dly1975.csv",
+    "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0) \u2014 Met \u00c9ireann (https://www.met.ie/)",
+    "limitations": [
+      "Regional synoptic weather station (~27 km NNE of Lough Funshinagh) measures daily precipitation only; rainfall is an indirect environmental indicator and cannot prove road flooding.",
+      "Daily aggregated precipitation (00\u201324 UTC) does not capture localized cloudburst timing or karst groundwater lag.",
+      "Exact historical publication timestamp (available_at) is not recorded per row in the CSV archive and remains unknown (null).",
+      "Raw CSV SHA-256 confirms local byte integrity only; source cryptographic authentication is unknown (unverified)."
+    ],
+    "synthetic": false
   }
 ]

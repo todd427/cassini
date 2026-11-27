@@ -159,11 +159,15 @@ All v0.1 response fields are preserved verbatim (including exact 4-key `findings
 ```
 
 ### Core Engine Reason Codes
-In addition to policy-defined reason codes (such as `FLOOD_EXTENT_INTERSECTS`, `NO_MAPPED_OVERLAP`, `OBSERVATION_STALE`, `OBSERVATION_TIME_UNKNOWN`, `COVERAGE_UNKNOWN`, `OUTSIDE_COVERAGE` in `flood-road-0.1`), the generic engine may emit:
+In addition to policy-defined reason codes (such as `FLOOD_EXTENT_INTERSECTS`, `NO_MAPPED_OVERLAP`, `OBSERVATION_STALE`, `OBSERVATION_TIME_UNKNOWN`, `COVERAGE_UNKNOWN`, `OUTSIDE_COVERAGE`, and optional indirect contextual codes `CONTEXTUAL_WATER_LEVEL_ELEVATED`, `CONTEXTUAL_WATER_LEVEL_NORMAL`, `CONTEXTUAL_RAINFALL_OBSERVED`, `CONTEXTUAL_RAINFALL_LOW`, `INDIRECT_EVIDENCE_ONLY` in `flood-road-0.1`), the generic engine may emit:
 - `NO_EVIDENCE`
 - `AUTHENTICATION_FAILED`
 - `NOT_AVAILABLE_AT_DECISION_TIME`
 - `AVAILABILITY_TIME_UNKNOWN`
+
+### Direct vs. Indirect Contextual Evidence (v0.3)
+- Policies declare `required_evidence_kinds` (direct observations) separately from `optional_evidence_kinds` (indirect contextual observations, e.g. `hydrometric_water_level` and `meteorological_rainfall` in `flood-road`).
+- Per-source findings for indirect contextual observations use statuses `contextual_support` or `contextual_neutral` and **never** alone produce `potential_conflict` or `no_mapped_overlap` for a specific road segment. If only indirect observations qualify, the overall status remains `insufficient_evidence` with `INDIRECT_EVIDENCE_ONLY`.
 
 ### Source Independence Statuses
 - `single_source` — 1 evidence source evaluated.

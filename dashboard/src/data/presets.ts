@@ -224,6 +224,17 @@ export function runMockAssessment(
         reasons: ["OBSERVATION_STALE"],
       };
     }
+    if (
+      !ev.geometry ||
+      (ev.geometry.type !== "Polygon" && ev.geometry.type !== "MultiPolygon")
+    ) {
+      return {
+        evidence_id: ev.id,
+        status: "insufficient_evidence",
+        age_hours: ageHours,
+        reasons: ["COVERAGE_UNKNOWN"],
+      };
+    }
     const floodRing =
       ev.geometry.type === "Polygon" ? ev.geometry.coordinates[0] : ev.geometry.coordinates[0][0];
     const covRing =
