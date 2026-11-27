@@ -1,30 +1,81 @@
-"""Core assessment engine and domain models for EIP (Contract v0.1)."""
+"""Generic, domain-independent core engine and models for EIP (v0.2)."""
 
-from core.assessment import assess_claim
+from core.engine import AssessmentEngine
+from core.independence import analyze_source_independence
+from core.integrity import compute_file_sha256, verify_evidence_checksum
 from core.models import (
+    CONTRACT_V02_VERSION,
     CONTRACT_VERSION,
-    MAX_AGE_HOURS,
-    POLICY_VERSION,
+    AssessmentMode,
     AssessmentResponse,
+    AssessmentTraceability,
+    CapabilitiesResponse,
     ClaimRequest,
     Evidence,
     EvidenceFinding,
     EvidenceListResponse,
     HealthResponse,
+    IndependenceSummary,
+    PolicyListResponse,
+    PolicySpec,
+    SourceProvenance,
+    TemporalContext,
 )
-from core.store import load_evidence_file, resolve_evidence_path
+from core.policy import (
+    AssessmentContext,
+    AssessmentPolicy,
+    ClaimValidationError,
+    EvidenceContext,
+    PolicyDecision,
+    PolicyError,
+    PolicyRegistry,
+    UnknownPolicyError,
+    UnsupportedClaimTypeError,
+)
+from core.store import (
+    EvidenceStore,
+    FileEvidenceStore,
+    InMemoryEvidenceStore,
+    load_evidence_file,
+    resolve_evidence_path,
+)
+from core.temporal import TemporalEvaluation, evaluate_temporal_eligibility
 
 __all__ = [
     "CONTRACT_VERSION",
-    "MAX_AGE_HOURS",
-    "POLICY_VERSION",
+    "CONTRACT_V02_VERSION",
+    "AssessmentContext",
+    "AssessmentEngine",
+    "AssessmentMode",
+    "AssessmentPolicy",
     "AssessmentResponse",
+    "AssessmentTraceability",
+    "CapabilitiesResponse",
     "ClaimRequest",
+    "ClaimValidationError",
     "Evidence",
+    "EvidenceContext",
     "EvidenceFinding",
     "EvidenceListResponse",
+    "EvidenceStore",
+    "FileEvidenceStore",
     "HealthResponse",
-    "assess_claim",
+    "InMemoryEvidenceStore",
+    "IndependenceSummary",
+    "PolicyDecision",
+    "PolicyError",
+    "PolicyListResponse",
+    "PolicyRegistry",
+    "PolicySpec",
+    "SourceProvenance",
+    "TemporalContext",
+    "TemporalEvaluation",
+    "UnknownPolicyError",
+    "UnsupportedClaimTypeError",
+    "analyze_source_independence",
+    "compute_file_sha256",
+    "evaluate_temporal_eligibility",
     "load_evidence_file",
     "resolve_evidence_path",
+    "verify_evidence_checksum",
 ]

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eip-cassini"
-version = "0.1.0"
-description = "Evidence Integrity Platform (EIP) - CASSINI 12 Hackathon Prototype"
+version = "0.2.0"
+description = "Evidence Integrity Platform (EIP) - Extensible Evidence Assessment Architecture"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0,<1.0.0",
@@ -22,7 +22,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["core*", "api*", "connectors*"]
+include = ["core*", "policies*", "api*", "connectors*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

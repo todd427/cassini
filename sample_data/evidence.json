@@ -5,6 +5,7 @@
     "product_id": "EMSR718_AOI02_DEL_MONIT01_v2",
     "source_url": "https://rapidmapping.emergency.copernicus.eu/backend/EMSR718/AOI02/DEL_MONIT01/EMSR718_AOI02_DEL_MONIT01_v2.zip",
     "observed_at": "2024-04-15T06:02:08Z",
+    "available_at": null,
     "retrieved_at": "2026-11-27T16:00:00Z",
     "kind": "flood_extent",
     "geometry": {
@@ -46338,6 +46339,22 @@
           ]
         ]
       ]
+    },
+    "attributes": {
+      "locality": "Lough Funshinagh",
+      "sensor_name": "COSMO-SkyMed",
+      "sensor_resolution": "3.0 m",
+      "feature_count": 103
+    },
+    "provenance": {
+      "original_source": "COSMO-SkyMed",
+      "publishing_organisation": "Copernicus EMS Rapid Mapping",
+      "upstream_datasets": [
+        "EMSR718_AOI02_DEL_MONIT01_v2"
+      ],
+      "derived_from": [],
+      "measurement_method": "SAR semi-automatic flood extraction",
+      "shared_dependencies": []
     },
     "authentication": "unknown",
     "sha256": "2f2039bd645de3f8f1a120ea717287bb3640e421f94e107dc98a9353b95ab947",

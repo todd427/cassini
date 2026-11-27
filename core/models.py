@@ -1,8 +1,7 @@
-"""Pydantic models and strict validators for EIP shared contract v0.1."""
+"""Domain-independent Pydantic models for EIP (Contract v0.1 compatible, extended for v0.2)."""
 
 from __future__ import annotations
 
-import math
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal
@@ -17,29 +16,24 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from shapely.geometry import LineString, MultiPolygon, Polygon, shape
+
+from core.spatial import (
+    GeoJSONGeometry,
+    LineStringGeometry,
+    PointGeometry,
+    PolygonOrMultiPolygonGeometry,
+)
 
 CONTRACT_VERSION = "0.1"
-POLICY_VERSION = "flood-road-0.1"
-MAX_AGE_HOURS = 24.0
+CONTRACT_V02_VERSION = "0.2"
 
 AuthenticationStatus = Literal["unknown", "verified", "failed"]
-AssessmentStatus = Literal[
-    "potential_conflict",
-    "no_mapped_overlap",
-    "insufficient_evidence",
-]
-EvidenceKind = Literal["flood_extent"]
-ClaimType = Literal["road_passable"]
-ReasonCode = Literal[
-    "FLOOD_EXTENT_INTERSECTS",
-    "NO_MAPPED_OVERLAP",
-    "OBSERVATION_STALE",
-    "OBSERVATION_TIME_UNKNOWN",
-    "COVERAGE_UNKNOWN",
-    "OUTSIDE_COVERAGE",
-    "NO_EVIDENCE",
-    "AUTHENTICATION_FAILED",
+AssessmentMode = Literal["retrospective", "decision_time"]
+IndependenceStatus = Literal[
+    "single_source",
+    "shared_dependencies_detected",
+    "distinct_declared_sources",
+    "unknown",
 ]
 
 
@@ -65,92 +59,22 @@ AwareUtcDatetime = Annotated[
 ]
 
 
-def _validate_position(pos: Any) -> None:
-    if not isinstance(pos, (list, tuple)) or len(pos) < 2 or len(pos) > 3:
-        raise ValueError("Each GeoJSON position must be a [lon, lat] coordinate array.")
-    lon, lat = pos[0], pos[1]
-    if isinstance(lon, bool) or isinstance(lat, bool):
-        raise ValueError("Coordinates must be numeric, not boolean.")
-    if not isinstance(lon, (int, float)) or not isinstance(lat, (int, float)):
-        raise ValueError("Coordinates must be numeric.")
-    if not (math.isfinite(lon) and math.isfinite(lat)):
-        raise ValueError("Coordinates must be finite numbers.")
-    if not (-180.0 <= float(lon) <= 180.0):
-        raise ValueError(f"Longitude {lon} out of WGS84 range [-180, 180].")
-    if not (-90.0 <= float(lat) <= 90.0):
-        raise ValueError(f"Latitude {lat} out of WGS84 range [-90, 90].")
-    if len(pos) == 3:
-        alt = pos[2]
-        if isinstance(alt, bool) or not isinstance(alt, (int, float)) or not math.isfinite(alt):
-            raise ValueError("Altitude coordinate must be a finite number.")
+class SourceProvenance(BaseModel):
+    """Structured source lineage and upstream dependency metadata."""
 
-
-def _validate_linear_ring(ring: Any) -> None:
-    if not isinstance(ring, list) or len(ring) < 4:
-        raise ValueError("Polygon linear ring must have at least 4 positions.")
-    for pos in ring:
-        _validate_position(pos)
-    if ring[0][:2] != ring[-1][:2]:
-        raise ValueError("Polygon linear ring must be closed (first position equals last).")
-
-
-def _validate_polygon_coords(rings: Any) -> None:
-    if not isinstance(rings, list) or len(rings) == 0:
-        raise ValueError("Polygon must have at least one linear ring.")
-    for ring in rings:
-        _validate_linear_ring(ring)
-
-
-class LineStringGeometry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["LineString"]
-    coordinates: list[list[float]]
-
-    @model_validator(mode="after")
-    def validate_geometry(self) -> LineStringGeometry:
-        if len(self.coordinates) < 2:
-            raise ValueError("LineString must contain at least 2 coordinate positions.")
-        for pos in self.coordinates:
-            _validate_position(pos)
-        try:
-            geom = shape({"type": self.type, "coordinates": self.coordinates})
-        except Exception as exc:
-            raise ValueError(f"Malformed LineString geometry: {exc}") from exc
-        if not isinstance(geom, LineString) or geom.is_empty or not geom.is_valid:
-            raise ValueError("LineString geometry is invalid or empty.")
-        if geom.length == 0.0:
-            raise ValueError("LineString geometry must have non-zero length.")
-        return self
-
-
-class PolygonOrMultiPolygonGeometry(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    type: Literal["Polygon", "MultiPolygon"]
-    coordinates: Any
-
-    @model_validator(mode="after")
-    def validate_geometry(self) -> PolygonOrMultiPolygonGeometry:
-        if self.type == "Polygon":
-            _validate_polygon_coords(self.coordinates)
-        else:
-            if not isinstance(self.coordinates, list) or len(self.coordinates) == 0:
-                raise ValueError("MultiPolygon must contain at least one Polygon.")
-            for poly in self.coordinates:
-                _validate_polygon_coords(poly)
-        try:
-            geom = shape({"type": self.type, "coordinates": self.coordinates})
-        except Exception as exc:
-            raise ValueError(f"Malformed {self.type} geometry: {exc}") from exc
-        if not isinstance(geom, (Polygon, MultiPolygon)) or geom.is_empty or not geom.is_valid:
-            raise ValueError(f"{self.type} geometry is invalid or empty.")
-        if geom.area <= 0.0:
-            raise ValueError(f"{self.type} geometry must have positive area.")
-        return self
+    original_source: str | None = None
+    publishing_organisation: str | None = None
+    upstream_datasets: list[str] = Field(default_factory=list)
+    derived_from: list[str] = Field(default_factory=list)
+    measurement_method: str | None = None
+    shared_dependencies: list[str] = Field(default_factory=list)
 
 
 class Evidence(BaseModel):
+    """Generic evidence record supporting spatial and non-spatial domains."""
+
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(min_length=1)
@@ -158,10 +82,13 @@ class Evidence(BaseModel):
     product_id: str | None = None
     source_url: str | None = None
     observed_at: AwareUtcDatetime | None = None
+    available_at: AwareUtcDatetime | None = None
     retrieved_at: AwareUtcDatetime | None = None
-    kind: EvidenceKind
-    geometry: PolygonOrMultiPolygonGeometry
+    kind: str = Field(min_length=1)
+    geometry: GeoJSONGeometry | None = None
     coverage: PolygonOrMultiPolygonGeometry | None = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
+    provenance: SourceProvenance | None = None
     authentication: AuthenticationStatus = "unknown"
     sha256: str | None = None
     raw_path: str | None = None
@@ -194,36 +121,138 @@ class Evidence(BaseModel):
 
 
 class ClaimRequest(BaseModel):
+    """Generic structured claim dispatched to a registered assessment policy."""
+
     model_config = ConfigDict(extra="forbid")
 
     claim_id: str = Field(min_length=1)
-    claim_type: ClaimType
-    geometry: LineStringGeometry
+    claim_type: str = Field(min_length=1)
+    geometry: GeoJSONGeometry | None = None
     claimed_at: AwareUtcDatetime
     source_label: str = Field(min_length=1)
     synthetic: bool
+    attributes: dict[str, Any] = Field(default_factory=dict)
+    assessment_mode: AssessmentMode = "retrospective"
+    decision_time: AwareUtcDatetime | None = None
+    assessed_at: AwareUtcDatetime | None = None
+    policy_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_temporal_mode(self) -> ClaimRequest:
+        if self.assessment_mode == "decision_time" and self.decision_time is None:
+            raise ValueError(
+                "decision_time is required when assessment_mode is 'decision_time'."
+            )
+        return self
 
 
 class EvidenceFinding(BaseModel):
+    """Per-evidence assessment finding (v0.1 compatible field set)."""
+
     model_config = ConfigDict(extra="forbid")
 
     evidence_id: str
-    status: AssessmentStatus
+    status: str
     age_hours: float | None
-    reasons: list[ReasonCode]
+    reasons: list[str]
+
+
+class IndependenceSummary(BaseModel):
+    """Summary of source independence and detected shared upstream dependencies."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: IndependenceStatus
+    assessed_source_count: int
+    independent_group_count: int | None
+    correlated_groups: list[list[str]] = Field(default_factory=list)
+    shared_dependencies: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class TemporalContext(BaseModel):
+    """Explicit temporal context distinguishing claim, decision, assessment, and availability."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    assessment_mode: AssessmentMode
+    claimed_at: AwareUtcDatetime
+    decision_time: AwareUtcDatetime | None = None
+    assessed_at: AwareUtcDatetime | None = None
+    excluded_not_available_ids: list[str] = Field(default_factory=list)
+    unknown_availability_ids: list[str] = Field(default_factory=list)
+
+
+class AssessmentTraceability(BaseModel):
+    """Deterministic traceability record for audit and replay."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    policy_id: str
+    policy_version: str
+    input_fingerprint: str
+    assessed_at: AwareUtcDatetime | None = None
 
 
 class AssessmentResponse(BaseModel):
+    """Assessment response preserving v0.1 fields and adding v0.2 metadata."""
+
     model_config = ConfigDict(extra="forbid")
 
     claim_id: str
-    status: AssessmentStatus
-    policy_version: str = POLICY_VERSION
-    reasons: list[ReasonCode]
+    status: str
+    policy_version: str
+    reasons: list[str]
     evidence_ids: list[str]
     findings: list[EvidenceFinding]
     limitations: list[str]
     synthetic: bool
+    assessment_mode: AssessmentMode = "retrospective"
+    temporal_context: TemporalContext | None = None
+    independence: IndependenceSummary | None = None
+    traceability: AssessmentTraceability | None = None
+
+
+class PolicySpec(BaseModel):
+    """Declarative metadata describing a registered assessment policy."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    policy_id: str = Field(min_length=1)
+    policy_version: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    supported_claim_types: list[str] = Field(min_length=1)
+    required_evidence_kinds: list[str] = Field(default_factory=list)
+    optional_evidence_kinds: list[str] = Field(default_factory=list)
+    evidence_relevance_criteria: list[str] = Field(default_factory=list)
+    assessment_rules_summary: list[str] = Field(default_factory=list)
+    thresholds: dict[str, Any] = Field(default_factory=dict)
+    possible_outcomes: list[str] = Field(min_length=1)
+    reason_explanations: dict[str, str] = Field(default_factory=dict)
+    known_limitations: list[str] = Field(default_factory=list)
+
+
+class PolicyListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    contract_version: str = CONTRACT_V02_VERSION
+    policies: list[PolicySpec]
+
+
+class CapabilitiesResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    contract_version: str = CONTRACT_V02_VERSION
+    compatible_contract_versions: list[str] = Field(
+        default_factory=lambda: [CONTRACT_VERSION, CONTRACT_V02_VERSION]
+    )
+    supported_claim_types: list[str]
+    supported_evidence_kinds: list[str]
+    registered_policy_ids: list[str]
+    assessment_modes: list[AssessmentMode] = Field(
+        default_factory=lambda: ["retrospective", "decision_time"]
+    )
 
 
 class EvidenceListResponse(BaseModel):
@@ -237,3 +266,30 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"]
     contract_version: str = CONTRACT_VERSION
+
+
+__all__ = [
+    "CONTRACT_VERSION",
+    "CONTRACT_V02_VERSION",
+    "AssessmentMode",
+    "AssessmentResponse",
+    "AssessmentTraceability",
+    "AuthenticationStatus",
+    "AwareUtcDatetime",
+    "CapabilitiesResponse",
+    "ClaimRequest",
+    "Evidence",
+    "EvidenceFinding",
+    "EvidenceListResponse",
+    "GeoJSONGeometry",
+    "HealthResponse",
+    "IndependenceStatus",
+    "IndependenceSummary",
+    "LineStringGeometry",
+    "PointGeometry",
+    "PolicyListResponse",
+    "PolicySpec",
+    "PolygonOrMultiPolygonGeometry",
+    "SourceProvenance",
+    "TemporalContext",
+]

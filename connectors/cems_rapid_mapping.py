@@ -30,6 +30,8 @@ from shapely.geometry import MultiPolygon, Polygon, mapping, shape
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
+from connectors.base import ConnectorMetadata
+from core.integrity import compute_file_sha256
 from core.models import Evidence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -43,11 +45,7 @@ DEFAULT_EXAMPLES_OUT = REPO_ROOT / "sample_data" / "example_claims.json"
 
 
 def compute_sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    return compute_file_sha256(path)
 
 
 def _find_zip_member(z: zipfile.ZipFile, substring: str, suffix: str) -> str | None:
@@ -210,10 +208,25 @@ def extract_cems_evidence(
         "product_id": product_id,
         "source_url": source_url,
         "observed_at": observed_at,
+        "available_at": None,
         "retrieved_at": retrieved_iso,
         "kind": "flood_extent",
         "geometry": _to_geojson_poly(flood_union),
         "coverage": _to_geojson_poly(coverage_geom) if coverage_geom is not None else None,
+        "attributes": {
+            "locality": locality or None,
+            "sensor_name": sensor_name,
+            "sensor_resolution": sensor_res,
+            "feature_count": len(flood_geoms),
+        },
+        "provenance": {
+            "original_source": sensor_name,
+            "publishing_organisation": "Copernicus EMS Rapid Mapping",
+            "upstream_datasets": [product_id],
+            "derived_from": [],
+            "measurement_method": "SAR semi-automatic flood extraction",
+            "shared_dependencies": [],
+        },
         "authentication": "unknown",
         "sha256": sha256_hex,
         "raw_path": rel_raw_path,
@@ -230,9 +243,46 @@ def extract_cems_evidence(
         "synthetic": False,
     }
 
-    # Validate strictly against contract v0.1 before returning
+    # Validate strictly against EIP schema before returning
     validated = Evidence.model_validate(evidence_dict)
     return validated.model_dump(mode="json")
+
+
+class CemsRapidMappingConnector:
+    """EvidenceConnector implementation wrapping a local CEMS Rapid Mapping ZIP."""
+
+    def __init__(
+        self,
+        raw_zip_path: Path = DEFAULT_RAW_ZIP,
+        source_url: str = DEFAULT_SOURCE_URL,
+        retrieved_at: str | None = None,
+    ) -> None:
+        self._raw_zip_path = raw_zip_path
+        self._source_url = source_url
+        self._retrieved_at = retrieved_at
+        self._metadata = ConnectorMetadata(
+            connector_id="cems-rapid-mapping",
+            source_name="copernicus_ems_rapid_mapping",
+            publishing_organisation="Copernicus EMS Rapid Mapping",
+            produced_evidence_kinds=["flood_extent"],
+            supports_authentication=False,
+            notes=[
+                "Offline ZIP archive connector extracting observedEventA and areaOfInterestA layers.",
+                "SHA-256 verifies local byte integrity only; authentication remains unknown.",
+            ],
+        )
+
+    @property
+    def metadata(self) -> ConnectorMetadata:
+        return self._metadata
+
+    def load_evidence(self) -> list[Evidence]:
+        raw = extract_cems_evidence(
+            raw_zip_path=self._raw_zip_path,
+            source_url=self._source_url,
+            retrieved_at=self._retrieved_at,
+        )
+        return [Evidence.model_validate(raw)]
 
 
 def build_emsr718_example_claims() -> list[dict[str, Any]]:
