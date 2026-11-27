@@ -187,9 +187,10 @@ In addition to policy-defined reason codes (such as `FLOOD_EXTENT_INTERSECTS`, `
 
 ---
 
-## 6. Summary of v0.1 → v0.2 Changes
+## 6. Summary of v0.1 → v0.6 Compatibility
 
 - **Additive & backward-compatible:** Every v0.1 request and Evidence JSON remains valid. Existing `flood-road-0.1` outcomes, reason codes, and dashboard behaviour are unchanged.
-- **New discovery routes:** `GET /v1/capabilities` and `GET /v1/policies`.
-- **New optional fields:** `Evidence.available_at`, `Evidence.attributes`, `Evidence.provenance`; `ClaimRequest.attributes`, `assessment_mode`, `decision_time`, `assessed_at`, `policy_id`; `AssessmentResponse.assessment_mode`, `temporal_context`, `independence`, `traceability`.
-- **New header:** `X-EIP-Assessed-At` on `POST /v1/assess` responses.
+- **No wire-breaking changes in v0.6:** `eip_sdk` consumes the existing public REST endpoints (`/health`, `/v1/capabilities`, `/v1/policies`, `/v1/evidence`, `/v1/assess`, `/v1/assess/graph`) without requiring new API routes or `core/` engine changes.
+- **Discovery & graph routes:** `GET /v1/capabilities`, `GET /v1/policies`, `POST /v1/assess/graph`, `POST /v1/galileo/tamper-demo`, `GET /v1/context/lough-funshinagh`.
+- **New optional fields (v0.2+):** `Evidence.available_at`, `Evidence.attributes`, `Evidence.provenance`; `ClaimRequest.attributes`, `assessment_mode`, `decision_time`, `assessed_at`, `policy_id`; `AssessmentResponse.assessment_mode`, `temporal_context`, `independence`, `traceability`.
+- **Server execution header:** `X-EIP-Assessed-At` on `POST /v1/assess` and `POST /v1/assess/graph` responses.

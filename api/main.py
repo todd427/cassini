@@ -89,7 +89,7 @@ def create_app(
 
     application = FastAPI(
         title="Evidence Integrity Platform (EIP) API",
-        version="0.5.0",
+        version="0.6.0",
         description=(
             "Domain-independent, deterministic evidence assessment API "
             "(Contract v0.1 compatible; extended with policy discovery, "

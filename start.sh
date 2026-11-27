@@ -68,7 +68,7 @@ setsid bash -c 'cd "$1" && exec npm run dev -- --host "$2" --port "$3"' _ \
 UI_PID=$!
 
 echo ""
-echo "EIP v0.5.0 is running (Ctrl+C to stop both services):"
+echo "EIP v0.6.0 is running (Ctrl+C to stop both services):"
 echo "  API:       http://${API_HOST}:${API_PORT}  (OpenAPI: http://${API_HOST}:${API_PORT}/docs)"
 echo "  Dashboard: http://${UI_HOST}:${UI_PORT}"
 echo ""

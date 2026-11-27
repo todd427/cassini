@@ -1,8 +1,8 @@
-# Evidence Integrity Platform (EIP) — v0.5.0
+# Evidence Integrity Platform (EIP) — v0.6.0
 
-An extensible, domain-independent evidence assessment platform with a deterministic REST API (Contract `v0.1` compatible + `v0.2`–`v0.5` discovery, temporal integrity, source independence, genuine multi-source corroboration, local Galileo OSNMA cryptographic verification, and backend-derived provenance/evidence graphs) and one unified presentation-grade reference web application (**Evidence Inspector**).
+An extensible, domain-independent evidence assessment platform with a deterministic REST API (Contract `v0.1` compatible + `v0.2`–`v0.6` discovery, temporal integrity, source independence, genuine multi-source corroboration, local Galileo OSNMA cryptographic verification, and backend-derived provenance/evidence graphs), a reusable **Python Client SDK & CLI (`eip_sdk`)**, and one reference web application (**Evidence Inspector**).
 
-> **Disclaimer:** EIP is an evidence-consistency and cryptographic navigation-message verification tool, **not** a truth oracle, safety certification, positioning-accuracy guarantee, or emergency routing service. No LLM and no arbitrary numerical truth score are used.
+> **Disclaimer:** EIP is an evidence-consistency and cryptographic navigation-message verification tool, **not** a truth oracle, safety certification, positioning-accuracy guarantee, or automated final decision-maker. No LLM and no arbitrary numerical truth score are used.
 
 ---
 
@@ -27,24 +27,28 @@ Domain Policies (policies/)          ──►   • 6 Timestamps & Temporal Mod
                                            • GET  /v1/capabilities, /v1/policies
                                            • POST /v1/assess & POST /v1/assess/graph
                                            • POST /v1/galileo/tamper-demo
-                                           • GET  /v1/context/lough-funshinagh (offline map context)
+                                           • GET  /v1/context/lough-funshinagh
                                                      │
-                                                     ▼
-                                         External Consumers & Evidence Inspector UI (:5173)
-                                           • Presentation Mode (5-second executive summary) & Technical Inspection Mode
-                                           • Interactive Provenance & Evidence Graph + 6-Timestamp Timeline
-                                           • Environmental Mode (offline Lough Funshinagh map + 2-click road drawing)
-                                           • Galileo OSNMA Mode (4-stage crypto pipeline + 1-bit tamper comparison)
+                   ┌─────────────────────────────────┴─────────────────────────────────┐
+                   ▼                                                                   ▼
+      External Enterprise Consumers                                      Reference UI (:5173)
+        • Python Client SDK (eip_sdk.EIPClient, REST-only)                 • Evidence Inspector
+        • Automated CLI (eip-cli / python -m eip_sdk)                      • Presentation & Technical
+        • Claims Triage CLI (examples/enterprise_insurance_workflow.py)    • Evidence Graph & Timeline
+        • Language-Agnostic HTTP / curl (examples/curl_examples.sh)        • Galileo Tamper Comparison
 ```
 
 ### Key Documentation
-- **[CONTRACT.md](CONTRACT.md):** Authoritative Contract interface (`v0.1` compatible + `v0.2`–`v0.5` extensions).
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** Architecture specification, Mermaid diagram, temporal integrity, source independence, and enterprise extension pattern.
-- **[docs/EVIDENCE-SOURCES.md](docs/EVIDENCE-SOURCES.md):** Research, acquisition results, licences, limitations, and independence analysis for Lough Funshinagh (April 2024).
-- **[docs/GALILEO-INTEGRATION.md](docs/GALILEO-INTEGRATION.md):** Galileo OSNMA research, preserved Septentrio SBF & GSC Merkle/Key material, 4-layer local cryptographic verification, and scope limitations.
+- **[docs/DEVELOPER-QUICKSTART.md](docs/DEVELOPER-QUICKSTART.md):** 5-minute Python SDK, CLI, and `curl` quickstart.
+- **[eip_sdk/README.md](eip_sdk/README.md):** Python Client SDK & CLI reference (`eip_sdk`).
+- **[docs/ENTERPRISE-INTEGRATION.md](docs/ENTERPRISE-INTEGRATION.md):** Architecture diagram, 7-step extension guide, and OpenAPI/GeoJSON/STAC/W3C PROV interoperability review.
+- **[docs/PRODUCTION-READINESS.md](docs/PRODUCTION-READINESS.md):** Explicit production enterprise readiness boundaries and gaps.
+- **[CONTRACT.md](CONTRACT.md):** Authoritative Contract interface (`v0.1` compatible + `v0.2`–`v0.6` extensions).
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** Core architecture specification, temporal integrity, and source independence.
+- **[docs/EVIDENCE-SOURCES.md](docs/EVIDENCE-SOURCES.md):** Genuine Lough Funshinagh evidence research, provenance, and independence analysis.
+- **[docs/GALILEO-INTEGRATION.md](docs/GALILEO-INTEGRATION.md):** Galileo OSNMA 4-layer local cryptographic verification and scope limitations.
 - **[docs/POLICY-DEVELOPMENT.md](docs/POLICY-DEVELOPMENT.md):** Step-by-step guide for adding a domain policy without modifying `core/` or `api/`.
-- **[docs/ACCEPTANCE-v0.5.md](docs/ACCEPTANCE-v0.5.md):** Verified v0.5 acceptance audit (see also `v0.4`, `v0.3`, `v0.2`, and `v0.1`).
-- **[connectors/README.md](connectors/README.md):** Connector instructions, raw archive URLs, and SHA-256 verification.
+- **[docs/ACCEPTANCE-v0.6.md](docs/ACCEPTANCE-v0.6.md):** Verified v0.6 acceptance audit (see also `v0.5`–`v0.1`).
 
 ---
 
